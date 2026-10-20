@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Proton VPN support
+    url: https://protonvpn.com/support
+    about: Problems with the Proton VPN app itself (connecting, port forwarding not available, kill switch)
+  - name: qBittorrent forum
+    url: https://forum.qbittorrent.org/
+    about: Problems with qBittorrent unrelated to the port sync

@@ -1,0 +1,11 @@
+# Runtime state the script creates (lives in %LOCALAPPDATA%, never commit it)
+qbit-pass.txt
+sync.log
+sync.log.*
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp

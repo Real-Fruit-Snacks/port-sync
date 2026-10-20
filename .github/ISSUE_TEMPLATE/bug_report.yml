@@ -1,0 +1,31 @@
+name: Bug report
+description: The script or guide isn't working as described
+labels: [bug]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Windows, Proton VPN app, qBittorrent, PowerShell (`$PSVersionTable.PSVersion`)
+      placeholder: Windows 11 23H2, Proton VPN 4.1.x, qBittorrent 4.6.5, PowerShell 5.1
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+  - type: textarea
+    id: sync-log
+    attributes:
+      label: sync.log
+      description: Last ~20 lines of `%LOCALAPPDATA%\proton-qbit-port-sync\sync.log`
+      render: text
+  - type: textarea
+    id: proton-log
+    attributes:
+      label: Proton VPN log sample
+      description: Output of the `Select-String ... -Pattern 'Port pair'` check from the README, with anything sensitive redacted
+      render: text
