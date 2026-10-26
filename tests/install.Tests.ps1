@@ -11,11 +11,12 @@ if ($env:OS -eq 'Windows_NT') {
 
 Describe 'install.ps1' -Tag 'Windows' -Skip:(-not $isWindowsAdmin) {
     BeforeAll {
-        $root      = Split-Path -Parent $PSScriptRoot
-        $installer = Join-Path $root 'install.ps1'
-        $source    = Join-Path $root 'port-sync.ps1'
-        $dir       = Join-Path $env:LOCALAPPDATA 'port-sync'
-        $legacyDir = Join-Path $env:LOCALAPPDATA 'proton-qbit-port-sync'
+        # script: scope so the It blocks see them (and the analyzer knows they're used)
+        $root             = Split-Path -Parent $PSScriptRoot
+        $script:installer = Join-Path $root 'install.ps1'
+        $script:source    = Join-Path $root 'port-sync.ps1'
+        $script:dir       = Join-Path $env:LOCALAPPDATA 'port-sync'
+        $script:legacyDir = Join-Path $env:LOCALAPPDATA 'proton-qbit-port-sync'
     }
 
     It 'migrates a 1.x install: password file kept, old task replaced' {
