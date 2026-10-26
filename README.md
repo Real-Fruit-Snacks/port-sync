@@ -9,6 +9,11 @@
 
 Keeps qBittorrent's port synced to Proton VPN
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cover-dark.svg">
+  <img alt="port-sync passing Proton VPN's forwarded port 48213 to qBittorrent's listening port, with the matching sync.log lines" src="docs/assets/cover-light.svg" width="100%">
+</picture>
+
 ```powershell
 irm rfs.sh/port-sync | iex
 ```

@@ -1,0 +1,28 @@
+<!-- port-sync cover panel: Proton VPN log -> port-sync -> qBittorrent, with two real sync.log messages.
+     480x368, origin = panel top-left. Rendered by Real-Fruit-Snacks/.github tools/make-cover.py. -->
+<rect width="480" height="368" fill="{surface}"/>
+<rect x="24.0" y="40" width="128" height="150" rx="8" fill="{code-bg}" stroke="{line}"/>
+<rfs-text font="sans-semibold" size="15" x="88.0" y="70" anchor="middle" ls="0" fill="{text}">Proton VPN</rfs-text>
+<rfs-text font="mono" size="11" x="88.0" y="88" anchor="middle" ls="0.3" fill="{mute}">client log</rfs-text>
+<rfs-text font="mono-semibold" size="28" x="88.0" y="138" anchor="middle" ls="0" fill="{amber}">48213</rfs-text>
+<rfs-text font="mono" size="9.5" x="88.0" y="162" anchor="middle" ls="1" fill="{mute}">FORWARDED PORT</rfs-text>
+<rect x="176.0" y="40" width="128" height="150" rx="8" fill="{raised}" stroke="{ember}" stroke-width="1.5"/>
+<path d="M222.0 116 A18 18 0 0 1 256.0 110" stroke="{ember}" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M256.0 110 l-1 -9 M256.0 110 l-9 1" stroke="{ember}" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M258.0 124 A18 18 0 0 1 224.0 130" stroke="{ember}" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M224.0 130 l1 9 M224.0 130 l9 -1" stroke="{ember}" stroke-width="3" fill="none" stroke-linecap="round"/>
+<rfs-text font="sans-semibold" size="15" x="240.0" y="70" anchor="middle" ls="0" fill="{text}">port-sync</rfs-text>
+<rfs-text font="mono" size="11" x="240.0" y="88" anchor="middle" ls="0.3" fill="{mute}">every 15 s</rfs-text>
+<rect x="328.0" y="40" width="128" height="150" rx="8" fill="{code-bg}" stroke="{line}"/>
+<rfs-text font="sans-semibold" size="15" x="392.0" y="70" anchor="middle" ls="0" fill="{text}">qBittorrent</rfs-text>
+<rfs-text font="mono" size="11" x="392.0" y="88" anchor="middle" ls="0.3" fill="{mute}">Web UI API</rfs-text>
+<rfs-text font="mono-semibold" size="28" x="392.0" y="138" anchor="middle" ls="0" fill="{mint}">48213</rfs-text>
+<rfs-text font="mono" size="9.5" x="392.0" y="162" anchor="middle" ls="1" fill="{mute}">LISTENING PORT</rfs-text>
+<path d="M158.0 115.0 H170.0" stroke="{ember}" stroke-width="2" stroke-linecap="round"/><path d="M165.0 110.0 L170.0 115.0 L165.0 120.0" stroke="{ember}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M310.0 115.0 H322.0" stroke="{ember}" stroke-width="2" stroke-linecap="round"/><path d="M317.0 110.0 L322.0 115.0 L317.0 120.0" stroke="{ember}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect y="222" width="480" height="146" fill="{code-bg}"/><rect y="222" width="480" height="1" fill="{line}"/>
+<rfs-text font="mono" size="11" x="24" y="250" anchor="start" ls="0.5" fill="{mute}">sync.log</rfs-text>
+<rfs-text font="mono" size="13" x="24" y="288" anchor="start" ls="0" fill="{ember}">[port-sync]</rfs-text>
+<rfs-text font="mono" size="13" x="117.6" y="288" anchor="start" ls="0" fill="{mint}">listening port updated: 49160 -> 48213</rfs-text>
+<rfs-text font="mono" size="13" x="24" y="318" anchor="start" ls="0" fill="{ember}">[port-sync]</rfs-text>
+<rfs-text font="mono" size="13" x="117.6" y="318" anchor="start" ls="0" fill="{text}">listening port already correct: 48213</rfs-text>

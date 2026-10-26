@@ -1,0 +1,14 @@
+# Cover + social preview. Regenerate with Real-Fruit-Snacks/.github, from the folder holding both clones:
+#   python3 .github/tools/make-cover.py port-sync/docs/assets/cover.toml
+name        = "port-sync"
+description = "Keeps qBittorrent's port synced to Proton VPN."
+bullets = [
+  "Reads the Proton VPN log every 15 seconds",
+  "Sets the port through qBittorrent's Web UI API",
+  "One install line, one UAC prompt",
+  "Windows PowerShell 5.1 and PowerShell 7",
+]
+
+[panel]
+kind = "art"
+file = "cover-art.svg"
