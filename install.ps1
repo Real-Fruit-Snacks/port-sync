@@ -1,7 +1,9 @@
 # install.ps1 - sets up port-sync for the current Windows account.
 #
-#   irm rfs.sh/port-sync | iex                                        install or update
-#   & ([scriptblock]::Create((irm rfs.sh/port-sync))) -Uninstall      remove everything
+#   irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex
+#       install or update
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall
+#       remove everything
 #   .\install.ps1 -Source .\port-sync.ps1                             install from a local copy
 #
 # Run it in a normal (not admin) PowerShell window as the account you torrent with.
@@ -154,7 +156,7 @@ Start-ScheduledTask -TaskName '$taskName'
     Write-Host ''
     Say "log:       Get-Content `"$dir\sync.log`" -Wait -Tail 20"
     Say "restart:   Stop-ScheduledTask $taskName; Start-ScheduledTask $taskName"
-    Say 'uninstall: & ([scriptblock]::Create((irm rfs.sh/port-sync))) -Uninstall'
+    Say 'uninstall: & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall'
     if ($newPassword -and -not $ok -and $NoPrompt) { Say 'Set the Web UI password above in qBittorrent, then restart the task.' }
 }
 

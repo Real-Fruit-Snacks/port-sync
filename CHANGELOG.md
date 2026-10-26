@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+### Changed
+- Install and uninstall lines use the raw GitHub URL of `install.ps1`. The `rfs.sh/port-sync` short link they used before was never live.
+
 ## [2.0.0] - 2026-10-26
 
 Renamed from `proton-qbit-port-sync` to `port-sync`. Re-run the installer to move over; it keeps the 1.x password file and replaces the 1.x task.

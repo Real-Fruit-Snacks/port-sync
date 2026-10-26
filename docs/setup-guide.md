@@ -111,7 +111,7 @@ If it kept downloading while disconnected, the binding didn't take. Recheck `Pro
 Proton usually changes the forwarded port every time you reconnect ([Proton](https://protonvpn.com/support/port-forwarding)), so the number from step 4 goes stale. In a normal PowerShell window:
 
 ```powershell
-irm rfs.sh/port-sync | iex
+irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex
 ```
 
 The installer prints a Web UI password and copies it to the clipboard. Before pressing Enter, in qBittorrent **Tools → Options → Web UI**:
@@ -219,7 +219,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\port-sync
 Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20
 Get-ScheduledTaskInfo port-sync
 Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync
-& ([scriptblock]::Create((irm rfs.sh/port-sync))) -Uninstall
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall
 ```
 
 ## Sources

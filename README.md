@@ -8,10 +8,10 @@ Keeps qBittorrent's port synced to Proton VPN
 </picture>
 
 ```powershell
-irm rfs.sh/port-sync | iex
+irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex
 ```
 
-Run it in a normal PowerShell window as the Windows account you torrent with. It generates a Web UI password, tells you where to paste it in qBittorrent, does one test sync, then registers a scheduled task that runs at sign-in. One UAC prompt, for the task. Without the short link: `irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex`.
+Run it in a normal PowerShell window as the Windows account you torrent with. It generates a Web UI password, tells you where to paste it in qBittorrent, does one test sync, then registers a scheduled task that runs at sign-in. One UAC prompt, for the task.
 
 Proton VPN hands out a new forwarded port on most reconnects. Until qBittorrent listens on that port, peers can't connect in, so downloads slow down and seeding mostly stops. On Linux the Proton app writes the port to a file; the Windows app only writes it to its own log, so port-sync reads the log every 15 seconds and sets the port through qBittorrent's Web UI API. It assumes the VPN and qBittorrent are already set up so torrent traffic can't leave outside the tunnel; [docs/setup-guide.md](docs/setup-guide.md) is that setup, step by step.
 
@@ -32,7 +32,7 @@ Coming from `proton-qbit-port-sync` 1.x: run the same install line. It keeps you
 Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20                  # watch it
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\port-sync\port-sync.ps1" -Once
 Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync                         # restart
-& ([scriptblock]::Create((irm rfs.sh/port-sync))) -Uninstall                        # remove
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall   # remove
 ```
 
 ## Tested on
