@@ -1,10 +1,3 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Real-Fruit-Snacks/.github/main/assets/rfs-lockup-dark.svg">
-    <img alt="RFS" src="https://raw.githubusercontent.com/Real-Fruit-Snacks/.github/main/assets/rfs-lockup-light.svg" height="40">
-  </picture>
-</p>
-
 # port-sync
 
 Keeps qBittorrent's port synced to Proton VPN
