@@ -1,7 +1,13 @@
-# Runtime state the script creates (lives in %LOCALAPPDATA%, never commit it)
+# Runtime state (lives in %LOCALAPPDATA%\port-sync; never commit it)
 qbit-pass.txt
+qbit-pass.txt.unreadable
 sync.log
 sync.log.*
+*.ps1.download
+
+# Test output
+testResults.xml
+coverage.xml
 
 # Editors / OS
 .vscode/

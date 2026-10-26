@@ -1,0 +1,38 @@
+name: Bug
+description: port-sync or the setup guide doesn't do what the README says
+labels: [bug]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Windows, Proton VPN app, qBittorrent, PowerShell, port-sync (`port-sync.ps1 -Version`)
+      placeholder: Windows 11 24H2, Proton VPN 4.1.x, qBittorrent 5.0.2, PowerShell 5.1, port-sync 2.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: Proton VPN protocol
+      options: [WireGuard, Stealth, OpenVPN, Smart, Not sure]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, what you got instead
+    validations:
+      required: true
+  - type: textarea
+    id: sync-log
+    attributes:
+      label: sync.log
+      description: Last ~20 lines of `%LOCALAPPDATA%\port-sync\sync.log`
+      render: text
+  - type: textarea
+    id: proton-log
+    attributes:
+      label: Proton VPN log sample
+      description: Output of `Select-String -Path "$env:LOCALAPPDATA\Proton\Proton VPN\Logs\client-logs.txt" -Pattern 'Port pair' | Select-Object -Last 3`, anything sensitive redacted
+      render: text

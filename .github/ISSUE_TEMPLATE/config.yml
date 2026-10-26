@@ -1,8 +1,11 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
+  - name: Security report
+    url: https://github.com/Real-Fruit-Snacks/port-sync/security/advisories/new
+    about: Anything that could expose the Web UI password or leak torrent traffic goes here, not in a public issue
   - name: Proton VPN support
     url: https://protonvpn.com/support
-    about: Problems with the Proton VPN app itself (connecting, port forwarding not available, kill switch)
+    about: The Proton VPN app itself (connecting, port forwarding not offered, kill switch)
   - name: qBittorrent forum
     url: https://forum.qbittorrent.org/
-    about: Problems with qBittorrent unrelated to the port sync
+    about: qBittorrent problems unrelated to the port sync

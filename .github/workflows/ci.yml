@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows:
+    # Unit tests under both PowerShells, plus the installer against a real Task Scheduler.
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pester 5 and PSScriptAnalyzer
+        run: |
+          Install-Module Pester -MinimumVersion 5.5 -Scope CurrentUser -Force -SkipPublisherCheck
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+      - name: Lint
+        run: |
+          $r = Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          $r | Format-Table -AutoSize
+          if ($r) { exit 1 }
+      - name: Scripts are ASCII
+        run: |
+          $bad = Get-ChildItem -Recurse -Filter *.ps1 | Where-Object { (Get-Content $_.FullName -Raw) -match '[^\x00-\x7F]' }
+          if ($bad) { $bad.FullName; exit 1 }
+      - name: Test
+        run: |
+          Import-Module Pester -MinimumVersion 5.5
+          $c = New-PesterConfiguration
+          $c.Run.Path = './tests'; $c.Run.Exit = $true; $c.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $c
+
+  qbittorrent:
+    # The sync against a real qBittorrent Web UI (qbittorrent-nox 4.6 from Ubuntu 24.04).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: qbittorrent-nox
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq qbittorrent-nox
+          sh tests/start-qbittorrent.sh ci-pass-123
+      - name: Test
+        shell: pwsh
+        env:
+          PORT_SYNC_TEST_QBIT_URL: http://127.0.0.1:8080
+          PORT_SYNC_TEST_QBIT_PASS: ci-pass-123
+        run: |
+          Install-Module Pester -MinimumVersion 5.5 -Scope CurrentUser -Force
+          $c = New-PesterConfiguration
+          $c.Run.Path = './tests'; $c.Run.Exit = $true; $c.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $c

@@ -1,3 +1,6 @@
-# PowerShell 5.1 is happiest with CRLF; keep the script that way on every platform
-*.ps1 text eol=crlf
 * text=auto
+
+# Windows PowerShell 5.1 is happiest with CRLF; keep the scripts that way on every platform
+*.ps1  text eol=crlf
+*.psd1 text eol=crlf
+*.sh   text eol=lf
