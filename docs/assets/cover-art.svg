@@ -1,5 +1,5 @@
 <!-- port-sync cover panel: Proton VPN log -> port-sync -> qBittorrent, with two real sync.log messages.
-     480x368, origin = panel top-left. Rendered by Real-Fruit-Snacks/.github tools/make-cover.py. -->
+     480x368, origin = panel top-left. Rendered by Real-Fruit-Snacks/rfs-brand tools/make-cover.py. -->
 <rect width="480" height="368" fill="{surface}"/>
 <rect x="24.0" y="40" width="128" height="150" rx="8" fill="{code-bg}" stroke="{line}"/>
 <rfs-text font="sans-semibold" size="15" x="88.0" y="70" anchor="middle" ls="0" fill="{text}">Proton VPN</rfs-text>
