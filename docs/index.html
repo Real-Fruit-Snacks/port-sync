@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>port-sync — keeps qBittorrent&#x27;s port synced to Proton VPN</title>
+<meta name="description" content="port-sync reads Proton VPN&#x27;s forwarded port from its Windows log every 15 seconds and sets qBittorrent&#x27;s listening port through the Web UI API. One install line, one UAC prompt.">
+<link rel="canonical" href="https://real-fruit-snacks.github.io/port-sync/">
+<meta property="og:title" content="port-sync">
+<meta property="og:description" content="Keeps qBittorrent&#x27;s port synced to Proton VPN">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://real-fruit-snacks.github.io/port-sync/">
+<meta property="og:image" content="https://real-fruit-snacks.github.io/port-sync/assets/cover-dark.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="560">
+<meta property="og:image:alt" content="port-sync passing Proton VPN&#x27;s forwarded port 48213 to qBittorrent&#x27;s listening port, with the matching sync.log lines">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#0C0D10">
+<script>
+  // Theme before first paint: a saved choice wins, otherwise follow the OS.
+  (function () {
+    try {
+      var t = localStorage.getItem('rfs-theme');
+      if (t === 'nightshift' || t === 'dayshift') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/rfs.css">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="https://real-fruit-snacks.github.io/" aria-label="RFS home">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Real-Fruit-Snacks/rfs-brand/main/assets/rfs-lockup-dark.svg">
+        <img alt="RFS" src="https://raw.githubusercontent.com/Real-Fruit-Snacks/rfs-brand/main/assets/rfs-lockup-light.svg" data-lockup>
+      </picture>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="name">port-sync</span>
+    </a>
+    <nav>
+      <a href="#install">Install</a>
+      <a href="#how">How it works</a>
+      <a href="#config">Configuration</a>
+      <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/docs/setup-guide.md">Setup guide</a>
+      <a class="keep" href="https://github.com/Real-Fruit-Snacks/port-sync">GitHub</a>
+      <button class="toggle" type="button" id="theme" aria-label="Switch between Nightshift and Dayshift"><span class="night">Nightshift</span><span class="day">Dayshift</span></button>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div>
+      <p class="label">Windows · PowerShell 5.1 and 7 · qBittorrent Web UI</p>
+      <h1>port-sync</h1>
+      <p class="lead">Keeps qBittorrent's port synced to Proton VPN</p>
+      <p class="sub">Proton VPN hands out a new forwarded port on most reconnects. Until qBittorrent listens on it, peers can't connect in. port-sync reads the port from Proton's log every 15 seconds and sets it in qBittorrent.</p>
+
+      <div class="install" id="install">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-pane="in">Install</button>
+          <button role="tab" aria-selected="false" data-pane="out">Uninstall</button>
+        </div>
+        <div class="pane" data-active data-id="in"><pre><code>irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex</code></pre><button class="copy" data-copy="irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex">Copy</button></div>
+        <div class="pane" data-id="out"><pre><code>& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall</code></pre><button class="copy" data-copy="& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall">Copy</button></div>
+        <div class="foot">Run it in a normal PowerShell window as the account you torrent with. It makes a Web UI password, tells you where to paste it in qBittorrent, does one test sync, then registers a task that runs at sign-in. One UAC prompt, for the task.</div>
+      </div>
+    </div>
+    <div class="term" aria-label="Example: sync.log after a reconnect">
+      <div class="bar"><i></i><i></i><i></i><span>sync.log</span></div>
+<pre><code><span class="c">2026-10-26 08:14:02 [port-sync]</span> port-sync 2.0.0 watching
+  C:\Users\you\AppData\Local\Proton\Proton VPN\Logs
+<span class="c">2026-10-26 08:14:02 [port-sync]</span> listening port updated:
+  <span class="a">49160</span> -&gt; <span class="s">48213</span>
+<span class="c">2026-10-26 09:02:17 [port-sync]</span> listening port already
+  correct: <span class="s">48213</span>
+
+<span class="c"># Proton log:  Port pair 48213-&gt;48213</span>
+<span class="c"># qBittorrent: listen_port = 48213</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<section id="why">
+  <div class="wrap two">
+    <div>
+      <p class="label">Why</p>
+      <h2>Windows has no port file</h2>
+    </div>
+    <div>
+      <p>On Linux the Proton app writes the forwarded port to a file. On Windows it only writes it to its own log, so every reconnect means opening qBittorrent's settings by hand, or a slow torrent until you notice.</p>
+      <p class="mute">port-sync assumes the VPN and qBittorrent are already set up so torrent traffic can't leave outside the tunnel. The <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/docs/setup-guide.md">setup guide</a> is that setup, step by step: kill switch, adapter binding, port forwarding, a leak test.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap two">
+    <div>
+      <p class="label">How it works</p>
+      <h2>Every 15 seconds</h2>
+      <p class="mute">The password is DPAPI-encrypted to your Windows account and only ever sent to the Web UI on 127.0.0.1.</p>
+    </div>
+    <ol class="steps">
+      <li>Checks that the <code>ProtonVPN</code> adapter is up.</li>
+      <li>Reads the newest <code>Port pair</code> line from Proton VPN's <code>client-logs.txt</code>.</li>
+      <li>Logs in to qBittorrent's Web UI and reads its listening port, at most once a minute when Proton's port hasn't changed.</li>
+      <li>If they differ, sets qBittorrent's port and checks that it took, then logs out.</li>
+      <li>Writes one line to <code>sync.log</code> per change. After a rejected login it waits for the password file to change, or 30 minutes, because qBittorrent bans an address after 5 failures.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="use">
+  <div class="wrap">
+    <p class="label">Day to day</p>
+    <h2>Watch, test, restart</h2>
+    <pre><code><span class="c"># watch it</span>
+Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20
+
+<span class="c"># one cycle: exit 0 if qBittorrent has the forwarded port, 1 if not</span>
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\port-sync\port-sync.ps1" -Once
+
+<span class="c"># restart the task</span>
+Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync</code></pre>
+    <p class="mute" style="margin-top:14px">Coming from <code>proton-qbit-port-sync</code> 1.x: run the same install line. It keeps your password file, replaces the old task, and moves to <code>%LOCALAPPDATA%\port-sync</code>.</p>
+  </div>
+</section>
+
+<section id="config">
+  <div class="wrap two">
+    <div>
+      <p class="label">Configuration</p>
+      <h2>Parameters</h2>
+      <p class="mute">Defaults fit the setup guide. To change one for the task, edit its arguments in an admin PowerShell (<code>Get-ScheduledTask</code>, <code>Set-ScheduledTask</code>); the README has the exact lines. Re-running the installer resets them.</p>
+    </div>
+    <table>
+      <tr><th>Parameter</th><th>Default</th></tr>
+      <tr><td>-QbitUrl</td><td><code>http://127.0.0.1:8080</code></td></tr>
+      <tr><td>-QbitUser</td><td><code>admin</code></td></tr>
+      <tr><td>-ProtonLogs</td><td><code>%LOCALAPPDATA%\Proton\Proton VPN\Logs</code></td></tr>
+      <tr><td>-Adapter</td><td><code>ProtonVPN</code>; <code>ProtonVPN TUN</code> for OpenVPN, <code>''</code> to skip the check</td></tr>
+      <tr><td>-StateDir</td><td><code>%LOCALAPPDATA%\port-sync</code></td></tr>
+      <tr><td>-IntervalSec</td><td><code>15</code>, how often to read the Proton log</td></tr>
+      <tr><td>-RecheckSec</td><td><code>60</code>, how often to re-read qBittorrent's port</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="tested">
+  <div class="wrap two">
+    <div>
+      <p class="label">Tested on</p>
+      <ul class="plain">
+        <li>Ubuntu 24.04 · PowerShell 7.4.6 · qbittorrent-nox 4.6.3: the Pester suite, including the sync against a real Web UI, with simulated Proton log lines</li>
+        <li>Windows Server 2022 (GitHub <code>windows-latest</code>) · Windows PowerShell 5.1 and PowerShell 7: unit tests, and the installer against a real Task Scheduler</li>
+        <li><em>Not</em> tested: the Proton VPN app's real log on a Windows 10/11 desktop, and qBittorrent 5.x. An issue saying which versions worked is welcome.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="label">Known issues</p>
+      <ul class="plain">
+        <li>Proton doesn't document the <code>Port pair</code> log line. If an update changes it, <code>sync.log</code> says so and nothing else breaks.</li>
+        <li>A console window can flash at sign-in.</li>
+        <li>The password file is encrypted to the account that created it: install as the account you torrent with.</li>
+        <li>qBittorrent has to be running to receive the port; a change made while it's closed lands within 60 s of opening it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>MIT · Not affiliated with Proton AG or the qBittorrent project · <a href="https://github.com/Real-Fruit-Snacks/port-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/SECURITY.md">Security</a></span>
+    <span><a href="https://real-fruit-snacks.github.io/">RFS</a> · Real tools. No filler. · <a href="https://github.com/Real-Fruit-Snacks/rfs-brand/blob/main/BRAND.md">Brand</a></span>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
