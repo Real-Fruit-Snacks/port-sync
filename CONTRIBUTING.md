@@ -22,6 +22,15 @@ If the Proton VPN app changed its log format, a redacted sample of the new line 
 5. No `exit` in `install.ps1`: under `irm | iex` it closes the user's window.
 6. Add a line to `CHANGELOG.md` under *Unreleased*.
 
+The README panel (`docs/assets/panel-{dark,light}.svg`) is drawn by `docs/art/make-panel.py`; change the script and re-run it rather than editing the SVGs. CI checks they match:
+
+```sh
+python -m pip install -r docs/art/requirements.txt
+python docs/art/make-panel.py
+```
+
+The social preview is `docs/card.html`, rendered to `docs/assets/social.png` at 1280 x 640.
+
 ## Tests
 
 ```powershell

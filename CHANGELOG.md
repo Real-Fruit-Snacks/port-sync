@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 ## [Unreleased]
 
 ### Changed
+- The README opens with an animated panel of the two ports, drawn by `docs/art/make-panel.py` (CI checks it's up to date), and the project page is redesigned around the same panel, with a reconnect you can replay. A monthly link check covers the README, the docs and the page.
 - Install and uninstall lines use the raw GitHub URL of `install.ps1`. The `rfs.sh/port-sync` short link they used before was never live.
 
 ## [2.0.0] - 2026-10-26

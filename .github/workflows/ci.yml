@@ -111,3 +111,17 @@ jobs:
           $c = New-PesterConfiguration
           $c.Run.Path = './tests'; $c.Run.Exit = $true; $c.Output.Verbosity = 'Detailed'
           Invoke-Pester -Configuration $c
+
+  art:
+    # The README panel is generated; fail if docs/assets/panel-*.svg no longer match docs/art/make-panel.py.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Regenerate the panel
+        run: |
+          python -m pip install --quiet -r docs/art/requirements.txt
+          python docs/art/make-panel.py
+          git diff --exit-code -- docs/assets/panel-dark.svg docs/assets/panel-light.svg

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!-- The GitHub social preview, 1280 x 640. Render from the repo root with killer-repo's card.mjs:
+       node card.mjs docs/card.html --out docs/assets/social.png
+     It shows the README panel's first frame (docs/assets/panel-dark.svg) under the name. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url(fonts/barlow-condensed-latin-700.woff2) format("woff2"); }
+  @font-face { font-family: "Barlow"; font-weight: 500; src: url(fonts/barlow-latin-500.woff2) format("woff2"); }
+  html, body { margin: 0; width: 1280px; height: 640px; background: #0C0D10; overflow: hidden; }
+  body { display: grid; place-content: center; gap: 22px; }
+  .row { display: flex; align-items: baseline; justify-content: space-between; width: 1000px; }
+  h1 { margin: 0; font: 700 104px/0.9 "Barlow Condensed", sans-serif; color: #E8E6E1; letter-spacing: -0.005em; }
+  p { margin: 0; font: 500 32px/1.2 "Barlow", sans-serif; color: #8A8F99; text-align: right; }
+  img { display: block; width: 1000px; height: auto; }
+</style>
+</head>
+<body>
+  <div class="row"><h1>port-sync</h1><p>Keeps qBittorrent's port<br>synced to Proton VPN</p></div>
+  <img src="assets/panel-dark.svg" alt="">
+</body>
+</html>

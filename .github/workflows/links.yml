@@ -1,0 +1,27 @@
+name: links
+
+# Links in the README, the docs and the project page. Monthly, because the pages they point at
+# (Proton's support articles, the community tools) move without this repo changing.
+on:
+  push:
+    branches: [main]
+    paths: ['**.md', 'docs/**.html']
+  schedule:
+    - cron: '17 6 3 * *'
+  workflow_dispatch:
+
+jobs:
+  lychee:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --max-retries 4 --retry-wait-time 10 --timeout 30
+            --accept 200,206,429
+            --exclude '^https://github\.com/Real-Fruit-Snacks/port-sync/(issues/new|security/advisories/new)'
+            './**/*.md' 'docs/**/*.html'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
