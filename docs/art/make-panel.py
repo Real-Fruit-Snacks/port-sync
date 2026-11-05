@@ -163,7 +163,7 @@ def build(theme):
     # --- the plate ---
     o.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="22" fill="{c["plate"]}" stroke="{c["line"]}"/>')
     o.append(text("PORT-SYNC", 40, 52, 17, cond_b, c["mute"], ls=0.2))
-    o.append(text("2.0.0", 960, 52, 17, cond_b, c["mute"], ls=0.2, anchor="end"))
+    o.append(text("2.0.1", 960, 52, 17, cond_b, c["mute"], ls=0.2, anchor="end"))
 
     # --- the two readouts ---
     wy, wh, ww = 108, 176, 380

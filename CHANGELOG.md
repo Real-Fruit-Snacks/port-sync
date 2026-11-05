@@ -4,9 +4,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-05
+
+The sync itself is unchanged; if 2.0.0 is running, there's nothing you need to do. Re-running the install line updates it to 2.0.1 and keeps your password file.
+
+### Fixed
+- The install and uninstall lines in the README and `docs/setup-guide.md`, and the uninstall line the installer prints when it finishes, used the `rfs.sh/port-sync` short link, which was never live. They use the raw GitHub URL of `install.ps1` now: `irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex`.
+
 ### Changed
-- The README opens with an animated panel of the two ports, drawn by `docs/art/make-panel.py` (CI checks it's up to date), and the project page is redesigned around the same panel, with a reconnect you can replay. A monthly link check covers the README, the docs and the page.
-- Install and uninstall lines use the raw GitHub URL of `install.ps1`. The `rfs.sh/port-sync` short link they used before was never live.
+- The README opens with an animated panel of the two ports and shows real `sync.log` output, with what each line means. The [project page](https://real-fruit-snacks.github.io/port-sync/) is redesigned around the same panel, with a reconnect you can replay.
+- The panel is drawn by `docs/art/make-panel.py` and CI checks it's up to date. A monthly link check covers the README, the docs and the page.
 
 ## [2.0.0] - 2026-10-26
 
@@ -37,6 +44,7 @@ Renamed from `proton-qbit-port-sync` to `port-sync`. Re-run the installer to mov
 - Setup guide for torrenting on Windows behind Proton VPN: kill switch, interface binding, port forwarding, verification, troubleshooting.
 - MIT license.
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/releases/tag/v1.0.0
