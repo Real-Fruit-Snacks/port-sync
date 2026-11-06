@@ -33,7 +33,7 @@ $unregister = 'if (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinu
               'if ($left) { throw ''PSGallery is still registered'' }; Write-Host "PSGallery: unregistered in PowerShell $($PSVersionTable.PSVersion)"'
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($unregister))
 foreach ($shell in 'powershell.exe', 'pwsh.exe') {
-    & $shell -NoProfile -NonInteractive -EncodedCommand $encoded
+    & $shell -NoProfile -NonInteractive -OutputFormat Text -EncodedCommand $encoded
     if ($LASTEXITCODE -ne 0) { throw "couldn't unregister PSGallery in $shell" }
 }
 

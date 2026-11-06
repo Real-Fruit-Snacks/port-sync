@@ -77,7 +77,7 @@ Describe 'install.ps1' -Tag 'Windows' -Skip:(-not $isWindowsAdmin) {
     }
 
     It 'run as a file with no -Source, installs the port-sync.ps1 next to it' {
-        $out = & $zipInstaller -NoPrompt 6>&1 | Out-String
+        $out = (& $zipInstaller -NoPrompt 6>&1 | ForEach-Object { "$_" }) -join "`n"   # Out-String would wrap long lines in 5.1
         # by folder name: the temp path can come back in its short (8.3) form
         $out | Should -Match "installing .*$zipName\\port-sync\.ps1"
         (Get-FileHash (Join-Path $dir 'port-sync.ps1')).Hash | Should -Be (Get-FileHash (Join-Path $zipDir 'port-sync.ps1')).Hash

@@ -85,7 +85,7 @@ for (`$i = 0; `$i -lt `$p.Count; `$i += 2) {
 "@
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($check))
     foreach ($s in $shells) {
-        $out = @(& $s.Path -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $encoded)
+        $out = @(& $s.Path -NoProfile -NonInteractive -ExecutionPolicy Bypass -OutputFormat Text -EncodedCommand $encoded)
         if ($LASTEXITCODE -ne 0) { $missing.Add("The kit's modules don't load in $($s.Path) $($s.Version); the error is above.") }
         else { foreach ($l in $out) { Say "  PowerShell $($s.Version) $l" } }
     }
