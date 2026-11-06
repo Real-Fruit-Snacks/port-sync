@@ -24,8 +24,8 @@ Coming from `proton-qbit-port-sync` 1.x: run the same install line. It keeps you
 `port-sync.ps1 -Once`, run against a Web UI listening on 49160 while Proton's log said `Port pair 48213->48213`:
 
 ```text
-2026-11-05 06:30:28 [port-sync] port-sync 2.0.1 watching C:\Users\you\AppData\Local\Proton\Proton VPN\Logs
-2026-11-05 06:30:29 [port-sync] listening port updated: 49160 -> 48213
+2026-11-05 20:47:33 [port-sync] port-sync 2.1.0 watching C:\Users\you\AppData\Local\Proton\Proton VPN\Logs
+2026-11-05 20:47:33 [port-sync] listening port updated: 49160 -> 48213
 ```
 
 The same call sends qBittorrent `{"listen_port":48213,"random_port":false,"upnp":false}`, so it also turns off the random port and UPnP. A condition that repeats is logged once:

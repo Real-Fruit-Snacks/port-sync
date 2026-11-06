@@ -4,9 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-05
+
+The sync is unchanged; if 2.0.x is running, there's nothing you need to do. Re-running the install line updates it to 2.1.0 and keeps your password file. New: each release has a download for installing on a PC with no internet, and a kit for working on port-sync offline.
+
 ### Added
-- `port-sync-<version>-offline.zip`: `install.ps1`, `port-sync.ps1`, the README, changelog, licence and setup guide. Unzip it and run `powershell -ExecutionPolicy Bypass -File .\install.ps1` in that folder; nothing is downloaded. `-Uninstall` on the same line removes it.
-- `port-sync-<version>-dev-windows-x64.zip`: the source with Pester, PSScriptAnalyzer and the panel's Python wheels, and `offline\setup.ps1`, which sets it up with no network. You can lint, test, redraw the panel and build the offline zip without internet. *Developing offline* in `CONTRIBUTING.md` has the steps.
+- `port-sync-2.1.0-offline.zip`: `install.ps1`, `port-sync.ps1`, the README, changelog, licence and setup guide. Unzip it and run `powershell -ExecutionPolicy Bypass -File .\install.ps1` in that folder; nothing is downloaded. `-Uninstall` on the same line removes it.
+- `port-sync-2.1.0-dev-windows-x64.zip`: the source with Pester, PSScriptAnalyzer and the panel's Python wheels, and `offline\setup.ps1`, which sets it up with no network. You can lint, test, redraw the panel and build the offline zip without internet. *Developing offline* in `CONTRIBUTING.md` has the steps.
 - `SHA256SUMS.txt` on the release, with the checksum of each zip.
 
 ### Changed
@@ -53,7 +57,8 @@ Renamed from `proton-qbit-port-sync` to `port-sync`. Re-run the installer to mov
 - Setup guide for torrenting on Windows behind Proton VPN: kill switch, interface binding, port forwarding, verification, troubleshooting.
 - MIT license.
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/releases/tag/v1.0.0

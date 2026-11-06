@@ -39,7 +39,7 @@ A 1200px wrap. The hero puts the headline and install line on the left and the p
 
 ## Signature
 
-The readouts. Digits are seven-segment SVG: seven polygons drawn once and reused by every digit, leaning 6°, right-aligned like a meter. The model label `PORT-SYNC 2.0.1` sits on the plate.
+The readouts. Digits are seven-segment SVG: seven polygons drawn once and reused by every digit, leaning 6°, right-aligned like a meter. The model label `PORT-SYNC 2.1.0` sits on the plate.
 
 ## Wow moment
 

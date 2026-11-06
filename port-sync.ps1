@@ -22,7 +22,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$script:PortSyncVersion = '2.0.1'
+$script:PortSyncVersion = '2.1.0'
 $QbitUrl  = $QbitUrl.TrimEnd('/')
 $PassFile = Join-Path $StateDir 'qbit-pass.txt'
 $SyncLog  = Join-Path $StateDir 'sync.log'
