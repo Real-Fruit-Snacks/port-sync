@@ -1,0 +1,53 @@
+name: release
+
+# A vX.Y.Z tag: check the changelog, run CI and the offline checks, then publish the release
+# with notes from CHANGELOG.md, the offline zip, the dev kit and SHA256SUMS.txt.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: CHANGELOG.md has this version, and so does port-sync.ps1
+        shell: pwsh
+        run: ./tools/release-notes.ps1 -Version ($env:GITHUB_REF_NAME.TrimStart('v'))
+
+  ci:
+    needs: changelog
+    uses: ./.github/workflows/ci.yml
+
+  offline:
+    needs: changelog
+    uses: ./.github/workflows/offline.yml
+
+  publish:
+    needs: [ci, offline]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: downloads
+          path: dist
+      - name: SHA256SUMS.txt
+        working-directory: dist
+        run: |
+          sha256sum -- *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          ./tools/release-notes.ps1 -Version ($env:GITHUB_REF_NAME.TrimStart('v')) -Out notes.md
+          Get-Content notes.md
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag --latest

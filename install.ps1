@@ -5,6 +5,8 @@
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall
 #       remove everything
 #   .\install.ps1 -Source .\port-sync.ps1                             install from a local copy
+#   powershell -ExecutionPolicy Bypass -File .\install.ps1              in the offline zip's folder:
+#       installs the port-sync.ps1 next to it; add -Uninstall to remove
 #
 # Run it in a normal (not admin) PowerShell window as the account you torrent with.
 # One UAC prompt appears for the scheduled task. Safe to re-run: an existing password
@@ -12,7 +14,8 @@
 # ASCII only and no 'exit': under 'irm | iex' an exit would close your PowerShell window.
 param(
     [switch]$Uninstall,
-    [string]$Source,     # local port-sync.ps1 to install instead of downloading
+    [string]$Source,     # local port-sync.ps1 to install instead of downloading; run as a file,
+                         # the one next to install.ps1 if there is one
     [switch]$NoPrompt    # don't wait for Enter before the test run
 )
 
@@ -32,6 +35,12 @@ function Install-RfsPortSync {
     $qUser     = $user -replace "'", "''"     # for embedding in single-quoted strings below
 
     function Say([string]$m) { Write-Host "[port-sync] $m" }
+
+    # Run as a file (from the offline zip, or a clone), this function knows its file; under
+    # 'irm | iex' it has none, so that path downloads as before.
+    $self = $PSCommandPath
+    $uninstallLine = '& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall'
+    if ($self) { $uninstallLine = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$self`" -Uninstall" }
 
     # Runs a block of task-scheduler commands elevated (one UAC prompt). Returns $true on success.
     function Invoke-Elevated([string]$Body) {
@@ -75,8 +84,13 @@ foreach (`$n in '$taskName', '$legacyTask') {
     # 1. Folder and script
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
     $tmp = "$target.download"
+    if (-not $Source -and $self) {
+        $beside = Join-Path (Split-Path -Parent $self) 'port-sync.ps1'
+        if (Test-Path -LiteralPath $beside) { $Source = $beside; Say "installing $beside" }
+    }
     if ($Source) {
         Copy-Item -LiteralPath $Source -Destination $tmp -Force
+        try { Unblock-File -LiteralPath $tmp } catch { }   # a file from a downloaded zip keeps the internet mark
     } else {
         # Windows PowerShell 5.1 on older builds still defaults to TLS 1.0; GitHub needs 1.2.
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -156,7 +170,7 @@ Start-ScheduledTask -TaskName '$taskName'
     Write-Host ''
     Say "log:       Get-Content `"$dir\sync.log`" -Wait -Tail 20"
     Say "restart:   Stop-ScheduledTask $taskName; Start-ScheduledTask $taskName"
-    Say 'uninstall: & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall'
+    Say "uninstall: $uninstallLine"
     if ($newPassword -and -not $ok -and $NoPrompt) { Say 'Set the Web UI password above in qBittorrent, then restart the task.' }
 }
 

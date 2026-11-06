@@ -2,7 +2,9 @@ name: ci
 
 on:
   push:
+    branches: ['**']   # tags run this through release.yml
   pull_request:
+  workflow_call:
 
 jobs:
   windows:
@@ -23,10 +25,8 @@ jobs:
           # isn't registered at all because the gallery was unreachable when PowerShellGet first
           # loaded. Use the module if the runner image already has that version; otherwise
           # re-register the gallery if needed and install, 5 tries, 15/30/45/60 s apart.
-          $modules = @(
-            @{ Name = 'Pester'; Version = '5.7.1' },
-            @{ Name = 'PSScriptAnalyzer'; Version = '1.25.0' }
-          )
+          # The versions are in tools/versions.psd1, which the dev kit reads too.
+          $modules = (Import-PowerShellDataFile tools/versions.psd1).Modules
           foreach ($m in $modules) {
             if (Get-Module -ListAvailable $m.Name | Where-Object { $_.Version -eq [version]$m.Version }) {
               Write-Host "$($m.Name) $($m.Version) is already on the runner"; continue
@@ -48,21 +48,10 @@ jobs:
               }
             }
           }
-      - name: Lint
-        run: |
-          $r = Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
-          $r | Format-Table -AutoSize -Wrap
-          if ($r) { Write-Host "$(@($r).Count) analyzer finding(s)"; exit 1 }
-      - name: Scripts are ASCII
-        run: |
-          $bad = Get-ChildItem -Recurse -Filter *.ps1 | Where-Object { (Get-Content $_.FullName -Raw) -match '[^\x00-\x7F]' }
-          if ($bad) { $bad.FullName; exit 1 }
+      - name: Lint and ASCII check
+        run: ./tools/lint.ps1
       - name: Test
-        run: |
-          Import-Module Pester -RequiredVersion 5.7.1
-          $c = New-PesterConfiguration
-          $c.Run.Path = './tests'; $c.Run.Exit = $true; $c.Output.Verbosity = 'Detailed'
-          Invoke-Pester -Configuration $c
+        run: ./tools/test.ps1
 
   qbittorrent:
     # The sync against a real qBittorrent Web UI (qbittorrent-nox 4.6 from Ubuntu 24.04).
@@ -72,6 +61,11 @@ jobs:
       - name: qbittorrent-nox
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq qbittorrent-nox
+          # The dev kit documents this version; fail if Ubuntu's package moves away from it
+          want=$(pwsh -NoProfile -Command '(Import-PowerShellDataFile tools/versions.psd1).QbittorrentNox')
+          have=$(dpkg-query -W -f='${Version}' qbittorrent-nox)
+          echo "qbittorrent-nox $have (tools/versions.psd1: $want)"
+          case "${have#*:}" in "$want"-*) ;; *) echo "qbittorrent-nox is $have, not $want; update tools/versions.psd1"; exit 1 ;; esac
           sh tests/start-qbittorrent.sh ci-pass-123
       - name: Test
         shell: pwsh
@@ -83,9 +77,7 @@ jobs:
           # isn't registered at all because the gallery was unreachable when PowerShellGet first
           # loaded. Use the module if the runner image already has that version; otherwise
           # re-register the gallery if needed and install, 5 tries, 15/30/45/60 s apart.
-          $modules = @(
-            @{ Name = 'Pester'; Version = '5.7.1' }
-          )
+          $modules = @((Import-PowerShellDataFile tools/versions.psd1).Modules | Where-Object { $_.Name -eq 'Pester' })
           foreach ($m in $modules) {
             if (Get-Module -ListAvailable $m.Name | Where-Object { $_.Version -eq [version]$m.Version }) {
               Write-Host "$($m.Name) $($m.Version) is already on the runner"; continue
@@ -107,19 +99,20 @@ jobs:
               }
             }
           }
-          Import-Module Pester -RequiredVersion 5.7.1
-          $c = New-PesterConfiguration
-          $c.Run.Path = './tests'; $c.Run.Exit = $true; $c.Output.Verbosity = 'Detailed'
-          Invoke-Pester -Configuration $c
+          ./tools/test.ps1
 
   art:
     # The README panel is generated; fail if docs/assets/panel-*.svg no longer match docs/art/make-panel.py.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Python version
+        id: pins
+        shell: pwsh
+        run: '"python=$((Import-PowerShellDataFile tools/versions.psd1).Python)" >> $env:GITHUB_OUTPUT'
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ steps.pins.outputs.python }}
       - name: Regenerate the panel
         run: |
           python -m pip install --quiet -r docs/art/requirements.txt

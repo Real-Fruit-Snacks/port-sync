@@ -17,6 +17,20 @@ Describe 'install.ps1' -Tag 'Windows' -Skip:(-not $isWindowsAdmin) {
         $script:source    = Join-Path $root 'port-sync.ps1'
         $script:dir       = Join-Path $env:LOCALAPPDATA 'port-sync'
         $script:legacyDir = Join-Path $env:LOCALAPPDATA 'proton-qbit-port-sync'
+
+        # An unzipped offline download: install.ps1 with a port-sync.ps1 next to it, marked so
+        # the tests can tell it from the repo's copy and from a download
+        $script:zipName      = 'port-sync-zip-' + [guid]::NewGuid().ToString('N')
+        $script:zipDir       = Join-Path ([IO.Path]::GetTempPath()) $zipName
+        $script:zipInstaller = Join-Path $zipDir 'install.ps1'
+        New-Item -ItemType Directory -Path $zipDir | Out-Null
+        Copy-Item -LiteralPath $installer -Destination $zipInstaller
+        (Get-Content -LiteralPath $source -Raw) -replace "PortSyncVersion = '[^']+'", "PortSyncVersion = '0.0.0-zip'" |
+            Set-Content -LiteralPath (Join-Path $zipDir 'port-sync.ps1') -NoNewline
+    }
+
+    AfterAll {
+        if ($zipDir -and (Test-Path -LiteralPath $zipDir)) { Remove-Item -LiteralPath $zipDir -Recurse -Force }
     }
 
     It 'migrates a 1.x install: password file kept, old task replaced' {
@@ -62,8 +76,28 @@ Describe 'install.ps1' -Tag 'Windows' -Skip:(-not $isWindowsAdmin) {
         (Get-FileHash (Join-Path $dir 'port-sync.ps1')).Hash | Should -Be $before.Hash
     }
 
-    It 'uninstalls: task and both folders gone' {
-        & $installer -Uninstall
+    It 'run as a file with no -Source, installs the port-sync.ps1 next to it' {
+        $out = & $zipInstaller -NoPrompt 6>&1 | Out-String
+        # by folder name: the temp path can come back in its short (8.3) form
+        $out | Should -Match "installing .*$zipName\\port-sync\.ps1"
+        (Get-FileHash (Join-Path $dir 'port-sync.ps1')).Hash | Should -Be (Get-FileHash (Join-Path $zipDir 'port-sync.ps1')).Hash
+        $out | Should -Match "uninstall: powershell -NoProfile -ExecutionPolicy Bypass -File `".*$zipName\\install\.ps1`" -Uninstall"
+    }
+
+    It 'under irm | iex, still downloads, even from a script in a folder with a port-sync.ps1' {
+        # iex runs install.ps1 in the wrapper's scope, so these stand-ins replace the download and the Enter prompt
+        $wrapper = Join-Path $zipDir 'iex-wrapper.ps1'
+        Set-Content -LiteralPath $wrapper -Value @(
+            'function Invoke-WebRequest { param([string]$Uri, [string]$OutFile, [switch]$UseBasicParsing) Set-Content -LiteralPath $OutFile -Value "`$script:PortSyncVersion = ''0.0.0-download''" }'
+            'function Read-Host { param([string]$Prompt) }'
+            "Get-Content -LiteralPath '$installer' -Raw | Invoke-Expression"
+        )
+        & $wrapper 6>&1 | Out-Null
+        Get-Content -LiteralPath (Join-Path $dir 'port-sync.ps1') -Raw | Should -Match "PortSyncVersion = '0.0.0-download'"
+    }
+
+    It 'uninstalls, run from that folder too: task and both folders gone' {
+        & $zipInstaller -Uninstall
         Get-ScheduledTask -TaskName 'port-sync' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
         Test-Path -LiteralPath $dir       | Should -BeFalse
         Test-Path -LiteralPath $legacyDir | Should -BeFalse

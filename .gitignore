@@ -15,3 +15,7 @@ coverage.xml
 Thumbs.db
 desktop.ini
 *.swp
+
+# Built downloads, and the dev kit's Python environment
+dist/
+.venv/

@@ -34,11 +34,13 @@ The social preview is `docs/card.html`, rendered to `docs/assets/social.png` at 
 ## Tests
 
 ```powershell
-Install-Module Pester -MinimumVersion 5.5 -Scope CurrentUser -Force -SkipPublisherCheck
-Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
-Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
-Invoke-Pester ./tests
+(Import-PowerShellDataFile tools/versions.psd1).Modules |
+    ForEach-Object { Install-Module $_.Name -RequiredVersion $_.Version -Scope CurrentUser -Force -SkipPublisherCheck }
+./tools/lint.ps1   # PSScriptAnalyzer with ./PSScriptAnalyzerSettings.psd1, and the ASCII check
+./tools/test.ps1   # Invoke-Pester ./tests
 ```
+
+`tools/versions.psd1` pins Pester and PSScriptAnalyzer for CI, the scripts and the dev kit.
 
 The tests against a real qBittorrent need a throwaway Web UI. On Linux or WSL with `qbittorrent-nox`:
 
@@ -50,6 +52,18 @@ PORT_SYNC_TEST_QBIT_URL=http://127.0.0.1:8080 PORT_SYNC_TEST_QBIT_PASS=test-pass
 `tests/install.Tests.ps1` registers a real scheduled task and deletes `%LOCALAPPDATA%\port-sync`; it only runs elevated on Windows, and is meant for CI. Don't run it where port-sync is installed.
 
 In the PR, say what you ran it against.
+
+## Developing offline
+
+Each release has `port-sync-<version>-dev-windows-x64.zip`: the source at that tag, plus Pester and PSScriptAnalyzer (`offline\powershell`), the panel's Python wheels for CPython 3.13 on Windows x64 (`offline\python`) and their licences. Unzip it, then in the `port-sync-<version>-dev` folder:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\offline\setup.ps1
+```
+
+It needs no network. It checks for Windows PowerShell 5.1, PowerShell 7 and Python 3.13 and says what's missing, checks the bundled modules load in both PowerShells, installs the wheels into `.venv` with `pip install --no-index`, then prints the commands for the lint, the tests, the panel and the offline zip. The kit doesn't include PowerShell, Python or Git; `offline\README.md` lists the versions CI uses, with a link to each offline installer. The tests against a real qBittorrent need `qbittorrent-nox` on Linux, so the kit skips them.
+
+`tools/build-dev-kit.ps1` builds the kit and needs the internet. It takes the versions from `tools/versions.psd1` and `docs/art/requirements.txt`, the files CI reads, and the `offline` workflow checks each release's kit with the network cut off.
 
 ## Style
 

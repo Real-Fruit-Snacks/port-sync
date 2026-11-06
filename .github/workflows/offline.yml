@@ -1,0 +1,251 @@
+name: offline
+
+# Builds the two downloads each release carries and proves each works with the internet and the
+# package registries cut off (.github/offline-cut-off.ps1):
+#   port-sync-<version>-offline.zip              installs, runs and uninstalls from its folder
+#   port-sync-<version>-dev-windows-x64.zip      sets up, lints, tests, redraws the panel and
+#                                                builds the offline zip, from the unzipped kit
+# release.yml runs this before it publishes. Run it by hand on main before pushing a tag.
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+      - name: Python version
+        id: pins
+        run: '"python=$((Import-PowerShellDataFile tools/versions.psd1).Python)" >> $env:GITHUB_OUTPUT'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.pins.outputs.python }}
+      - name: Build the downloads
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # build-dev-kit.ps1 registers the gallery if it's missing and retries; trust it so
+          # Save-Module doesn't stop to ask.
+          if (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue) { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted }
+          ./tools/build-offline.ps1
+          ./tools/build-dev-kit.ps1
+          Get-ChildItem dist | Format-Table Name, Length -AutoSize
+      - uses: actions/upload-artifact@v7
+        with:
+          name: downloads
+          path: dist/*.zip
+          if-no-files-found: error
+
+  dev-kit:
+    needs: build
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+      - uses: actions/download-artifact@v8
+        with:
+          name: downloads
+          path: ${{ runner.temp }}/downloads
+      - name: Unzip the kit into a fresh folder, marked as downloaded
+        id: kit
+        shell: pwsh
+        run: |
+          $zip = @(Get-ChildItem "$env:RUNNER_TEMP/downloads/*-dev-windows-x64.zip")
+          if ($zip.Count -ne 1) { throw "want one dev kit, found: $($zip.Name -join ', ')" }
+          $dest = Join-Path $env:RUNNER_TEMP 'kit'
+          Expand-Archive -LiteralPath $zip[0].FullName -DestinationPath $dest
+          $top = @(Get-ChildItem -LiteralPath $dest)
+          if ($top.Count -ne 1 -or -not $top[0].PSIsContainer) { throw "the kit should unzip to one folder, not: $($top.Name -join ', ')" }
+          if ($top[0].Name -ne ($zip[0].BaseName -replace '-windows-x64$', '')) { throw "the kit's folder is $($top[0].Name)" }
+          # What a browser and Explorer leave on files from the internet
+          Get-ChildItem -LiteralPath $top[0].FullName -Recurse -File | ForEach-Object {
+            Set-Content -LiteralPath $_.FullName -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
+          }
+          Get-ChildItem -LiteralPath (Join-Path $top[0].FullName 'offline') | Format-Table Name, Length -AutoSize
+          "dir=$($top[0].FullName)" >> $env:GITHUB_OUTPUT
+          "python=$((Import-PowerShellDataFile (Join-Path $top[0].FullName 'tools/versions.psd1')).Python)" >> $env:GITHUB_OUTPUT
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.kit.outputs.python }}
+      - name: Cut off the internet and the registries
+        shell: pwsh
+        run: |
+          ./.github/offline-cut-off.ps1
+          python -m pip download --no-deps -d "$env:RUNNER_TEMP/pip-probe" fonttools==4.66.1
+          if ($LASTEXITCODE -eq 0) { throw 'pip still reaches an index' }
+          Write-Host 'pip: no index'
+          $global:LASTEXITCODE = 0
+      - name: offline\setup.ps1
+        working-directory: ${{ steps.kit.outputs.dir }}
+        run: |
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File .\offline\setup.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $marked = @(Get-ChildItem -Recurse -File | Where-Object { Get-Item -LiteralPath $_.FullName -Stream Zone.Identifier -ErrorAction SilentlyContinue })
+          if ($marked) { throw "setup.ps1 left $($marked.Count) files marked as downloaded" }
+      - name: tools\lint.ps1, with the kit's PSScriptAnalyzer
+        working-directory: ${{ steps.kit.outputs.dir }}
+        run: |
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File .\tools\lint.ps1 | Tee-Object -Variable out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $v = ((Import-PowerShellDataFile .\tools\versions.psd1).Modules | Where-Object { $_.Name -eq 'PSScriptAnalyzer' }).Version
+          $want = "PSScriptAnalyzer $v from $(Join-Path (Get-Location) "offline\powershell\PSScriptAnalyzer\$v")"
+          if (-not ($out -match ('^' + [regex]::Escape($want) + '$'))) { throw "want '$want'" }
+      - name: tools\test.ps1, with the kit's Pester
+        working-directory: ${{ steps.kit.outputs.dir }}
+        run: |
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File .\tools\test.ps1 | Tee-Object -Variable out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $v = ((Import-PowerShellDataFile .\tools\versions.psd1).Modules | Where-Object { $_.Name -eq 'Pester' }).Version
+          $want = "Pester $v from $(Join-Path (Get-Location) "offline\powershell\Pester\$v")"
+          if (-not ($out -match ('^' + [regex]::Escape($want) + '$'))) { throw "want '$want'" }
+      - name: The panel, redrawn with the kit's wheels
+        working-directory: ${{ steps.kit.outputs.dir }}
+        run: |
+          $svgs = 'docs\assets\panel-dark.svg', 'docs\assets\panel-light.svg'
+          $before = @($svgs | ForEach-Object { (Get-Content -LiteralPath $_ -Raw) -replace "`r", '' })
+          & .\.venv\Scripts\python.exe docs\art\make-panel.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          for ($i = 0; $i -lt $svgs.Count; $i++) {
+            if (((Get-Content -LiteralPath $svgs[$i] -Raw) -replace "`r", '') -cne $before[$i]) { throw "$($svgs[$i]) no longer matches docs\art\make-panel.py" }
+          }
+          Write-Host 'panel: unchanged'
+      - name: tools\build-offline.ps1, the same zip as the release's
+        working-directory: ${{ steps.kit.outputs.dir }}
+        run: |
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File .\tools\build-offline.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $built = Get-ChildItem dist\*-offline.zip
+          $released = Get-ChildItem "$env:RUNNER_TEMP\downloads\$($built.Name)"
+          $a = Join-Path $env:RUNNER_TEMP 'cmp-kit'; $b = Join-Path $env:RUNNER_TEMP 'cmp-release'
+          Expand-Archive -LiteralPath $built.FullName -DestinationPath $a
+          Expand-Archive -LiteralPath $released.FullName -DestinationPath $b
+          $hash = { param($d) Get-ChildItem -LiteralPath $d -Recurse -File | ForEach-Object { '{0} {1}' -f $_.FullName.Substring($d.Length), (Get-FileHash -LiteralPath $_.FullName).Hash } | Sort-Object }
+          $diff = Compare-Object @(& $hash $a) @(& $hash $b)
+          if ($diff) { $diff | Format-Table -AutoSize | Out-String -Width 200 | Write-Host; throw 'the kit builds a different offline zip' }
+          Write-Host "$($built.Name): same files as the release's"
+
+  run-offline:
+    needs: build
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+      - uses: actions/download-artifact@v8
+        with:
+          name: downloads
+          path: ${{ runner.temp }}/downloads
+      - name: Unzip the offline download into a fresh folder, marked as downloaded
+        id: zip
+        shell: pwsh
+        run: |
+          $zip = @(Get-ChildItem "$env:RUNNER_TEMP/downloads/*-offline.zip")
+          if ($zip.Count -ne 1) { throw "want one offline zip, found: $($zip.Name -join ', ')" }
+          $dest = Join-Path $env:RUNNER_TEMP 'offline'
+          Expand-Archive -LiteralPath $zip[0].FullName -DestinationPath $dest
+          $top = @(Get-ChildItem -LiteralPath $dest)
+          if ($top.Count -ne 1 -or -not $top[0].PSIsContainer) { throw "the zip should hold one folder, not: $($top.Name -join ', ')" }
+          $root = $top[0].FullName
+          $have = @(Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object { $_.FullName.Substring($root.Length + 1) } | Sort-Object)
+          $want = @('CHANGELOG.md', 'LICENSE', 'README.md', 'docs\setup-guide.md', 'install.ps1', 'port-sync.ps1' | Sort-Object)
+          if (Compare-Object $have $want) { throw "the zip holds: $($have -join ', ')" }
+          Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object {
+            Set-Content -LiteralPath $_.FullName -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
+          }
+          "dir=$root" >> $env:GITHUB_OUTPUT
+      - name: Cut off the internet and the registries
+        shell: pwsh
+        run: ./.github/offline-cut-off.ps1
+      - name: Install from the folder (install.ps1, no -Source)
+        working-directory: ${{ steps.zip.outputs.dir }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -NoPrompt | Tee-Object -Variable out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $here = (Get-Location).Path
+          $installed = Join-Path $env:LOCALAPPDATA 'port-sync\port-sync.ps1'
+          if (-not ($out -match [regex]::Escape("installing $here\port-sync.ps1"))) { throw "install.ps1 didn't say it used the port-sync.ps1 next to it" }
+          if ((Get-FileHash $installed).Hash -ne (Get-FileHash .\port-sync.ps1).Hash) { throw 'the installed port-sync.ps1 is not the one from the zip' }
+          if (Get-Item -LiteralPath $installed -Stream Zone.Identifier -ErrorAction SilentlyContinue) { throw 'the installed port-sync.ps1 is still marked as downloaded' }
+          if (-not ($out -match [regex]::Escape("uninstall: powershell -NoProfile -ExecutionPolicy Bypass -File `"$here\install.ps1`" -Uninstall"))) { throw 'no uninstall line for this folder' }
+          $t = Get-ScheduledTask -TaskName port-sync
+          if ($t.Actions[0].Arguments -notmatch [regex]::Escape($installed)) { throw "the task runs $($t.Actions[0].Arguments)" }
+      - name: It runs - the task, -Version, and one sync against a stand-in Web UI
+        working-directory: ${{ steps.zip.outputs.dir }}
+        run: |
+          $version = (Select-String -LiteralPath .\port-sync.ps1 -Pattern "PortSyncVersion = '([^']+)'").Matches[0].Groups[1].Value
+          $state = Join-Path $env:LOCALAPPDATA 'port-sync'
+          $sync = Join-Path $state 'port-sync.ps1'
+
+          # The scheduled task started the installed copy; its first line says so
+          $log = Join-Path $state 'sync.log'
+          for ($i = 0; $i -lt 30 -and -not (Select-String -LiteralPath $log -SimpleMatch "port-sync $version watching" -Quiet -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Seconds 2 }
+          Get-Content -LiteralPath $log
+          if (-not (Select-String -LiteralPath $log -SimpleMatch "port-sync $version watching" -Quiet)) { throw 'the task did not start port-sync' }
+
+          $v = powershell -NoProfile -ExecutionPolicy Bypass -File $sync -Version
+          if ($v -ne "port-sync $version") { throw "-Version said $v" }
+
+          # A stand-in for qBittorrent's Web UI on 127.0.0.1:8099, listening on 49160, any password.
+          # It polls for requests, so Stop-Job can end it, and quits by itself after 2 minutes.
+          $fake = Start-Job -ScriptBlock {
+            $l = New-Object Net.HttpListener
+            $l.Prefixes.Add('http://127.0.0.1:8099/')
+            $l.Start()
+            $port = 49160
+            $deadline = (Get-Date).AddMinutes(2)
+            while ((Get-Date) -lt $deadline) {
+              $next = $l.GetContextAsync()
+              while (-not $next.Wait(250) -and (Get-Date) -lt $deadline) { }
+              if (-not $next.IsCompleted) { break }
+              $c = $next.Result
+              $body = (New-Object IO.StreamReader($c.Request.InputStream)).ReadToEnd()
+              $text = ''
+              switch ($c.Request.Url.AbsolutePath) {
+                '/api/v2/auth/login'         { $c.Response.AppendHeader('Set-Cookie', 'SID=stand-in; path=/'); $text = 'Ok.' }
+                '/api/v2/app/preferences'    { $c.Response.ContentType = 'application/json'; $text = '{"listen_port":' + $port + ',"upnp":true,"random_port":false}' }
+                '/api/v2/app/setPreferences' { if ([Uri]::UnescapeDataString(($body -replace '\+', ' ')) -match '"listen_port":(\d+)') { $port = [int]$Matches[1] } }
+                '/api/v2/auth/logout'        { }
+                default                      { $c.Response.StatusCode = 404 }
+              }
+              $bytes = [Text.Encoding]::UTF8.GetBytes($text)
+              $c.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+              $c.Response.Close()
+            }
+            $l.Stop()
+          }
+          Start-Sleep -Seconds 3
+          $logs = Join-Path $env:RUNNER_TEMP 'proton-logs'
+          New-Item -ItemType Directory -Path $logs -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $logs 'client-logs.txt') -Value 'Port pair 48213->48213'
+          $once = powershell -NoProfile -ExecutionPolicy Bypass -File $sync -Once -QbitUrl http://127.0.0.1:8099 -ProtonLogs $logs -Adapter '""'   # 5.1 passes an empty string this way
+          $code = $LASTEXITCODE
+          $once
+          Stop-Job $fake; Remove-Job $fake -Force
+          if ($code -ne 0) { throw "-Once exited $code" }
+          if (-not ($once -match 'listening port updated: 49160 -> 48213')) { throw 'no sync' }
+      - name: Uninstall from the folder
+        working-directory: ${{ steps.zip.outputs.dir }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Uninstall
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (Get-ScheduledTask -TaskName port-sync -ErrorAction SilentlyContinue) { throw 'the task is still there' }
+          if (Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'port-sync')) { throw "$env:LOCALAPPDATA\port-sync is still there" }
+          Write-Host 'uninstalled'

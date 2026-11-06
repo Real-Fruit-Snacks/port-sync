@@ -4,6 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+### Added
+- `port-sync-<version>-offline.zip`: `install.ps1`, `port-sync.ps1`, the README, changelog, licence and setup guide. Unzip it and run `powershell -ExecutionPolicy Bypass -File .\install.ps1` in that folder; nothing is downloaded. `-Uninstall` on the same line removes it.
+- `port-sync-<version>-dev-windows-x64.zip`: the source with Pester, PSScriptAnalyzer and the panel's Python wheels, and `offline\setup.ps1`, which sets it up with no network. You can lint, test, redraw the panel and build the offline zip without internet. *Developing offline* in `CONTRIBUTING.md` has the steps.
+- `SHA256SUMS.txt` on the release, with the checksum of each zip.
+
+### Changed
+- `install.ps1`, run as a file from a folder that has a `port-sync.ps1` in it, installs that copy instead of downloading one. It also ends by printing an uninstall line for that file. `irm | iex` downloads as before, and `-Source` still picks the file.
+- Releases are built and published by a workflow. Before it publishes, it runs the tests and the panel check, and checks both zips work with the network cut off.
+
 ## [2.0.1] - 2026-11-05
 
 The sync itself is unchanged; if 2.0.0 is running, there's nothing you need to do. Re-running the install line updates it to 2.0.1 and keeps your password file.
