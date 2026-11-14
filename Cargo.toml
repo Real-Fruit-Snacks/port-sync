@@ -1,0 +1,60 @@
+[package]
+name = "port-sync"
+version = "3.0.0"
+authors = ["Real-Fruit-Snacks"]
+description = "Keeps qBittorrent's listening port synced to the port Proton VPN forwards"
+license = "MIT"
+repository = "https://github.com/Real-Fruit-Snacks/port-sync"
+edition = "2021"
+include = ["src/**", "build.rs", "assets/**", "LICENSE", "README.md"]
+
+# Its own workspace: cargo never looks for one in a folder above.
+[workspace]
+
+[[bin]]
+name = "port-sync"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+# Windows uses the system TLS stack (SChannel) for an https Web UI. Elsewhere the program
+# only builds for the tests against qbittorrent-nox, which speak plain http.
+[target.'cfg(not(windows))'.dependencies]
+ureq = { version = "2.12", default-features = false }
+
+[target.'cfg(windows)'.dependencies.ureq]
+version = "2.12"
+default-features = false
+features = ["native-tls"]
+
+[target.'cfg(windows)'.dependencies]
+native-tls = "0.2"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
+    "Win32_Networking_WinSock",
+    "Win32_Security_Cryptography",
+    "Win32_System_Console",
+    "Win32_System_DataExchange",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+    "Win32_System_Ole",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+embed-resource = "3"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "unwind"

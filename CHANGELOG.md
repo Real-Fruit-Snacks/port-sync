@@ -4,6 +4,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-13
+
+port-sync is now one small program, `port-sync.exe`, that sits in the notification area: the icon shows whether qBittorrent has Proton's port, and a notification says when the port changes or something needs fixing. The sync itself is the same, line for line, and so is `sync.log`. Re-running the install line updates from 2.x or 1.x: it removes the old scheduled task (one UAC prompt, for that only) and keeps your password file and any setting you changed.
+
+### Added
+- The notification area icon: amber over green when in sync, grey while waiting for the VPN, a forwarded port or qBittorrent, pink below when something needs you. Its tooltip shows both ports.
+- Its menu: Sync now, Copy port, Open qBittorrent Web UI, Open log, Edit settings, Start at sign-in, Quit.
+- Notifications when qBittorrent gets a new port, and when something needs fixing (a rejected login, a password file that can't be read, a port qBittorrent won't take), once each. `"notifications": false` turns them off.
+- `%LOCALAPPDATA%\port-sync\config.json` for the settings, which **Edit settings** opens. Changes apply within 15 seconds, with nothing to restart.
+- A Start menu entry, to start port-sync again after Quit.
+- `port-sync.exe --quit` stops the running one; `--help` lists the options.
+- `port-sync.exe` on each release on its own, which the install line downloads and checks against `SHA256SUMS.txt`, and `THIRD-PARTY-LICENSES.txt` in each download.
+
+### Changed
+- `port-sync.ps1` is now `port-sync.exe`, written in Rust: about 800 KB, using about 15 MB of memory, where 2.x kept a PowerShell process running. `--once` and `--version` replace `-Once` and `-Version`; the 2.x spellings still work, and so do the 2.x option names (`-QbitUrl`, `-Adapter`, ...).
+- It starts at sign-in from your own Run key instead of a scheduled task, so installing needs no admin rights. **Start at sign-in** in the menu turns that off and on.
+- Settings you changed for 2.x, as task arguments, or for 1.x, in the script, move into `config.json` when you upgrade.
+- The offline zip carries `port-sync.exe` instead of `port-sync.ps1`. The dev kit adds every Rust crate (`cargo vendor`) and lists Rust and the Visual Studio Build Tools among the toolchains to install.
+- The sync's Pester tests are Rust tests now, run against a stand-in Web UI that answers as qBittorrent 4.x and 5.x do, and in CI also against a real qbittorrent-nox. The installer's tests stay in Pester.
+
+### Fixed
+- No console window flashes at sign-in. 2.x hid `powershell.exe`'s window only after it had opened.
+
 ## [2.1.0] - 2026-11-05
 
 The sync is unchanged; if 2.0.x is running, there's nothing you need to do. Re-running the install line updates it to 2.1.0 and keeps your password file. New: each release has a download for installing on a PC with no internet, and a kit for working on port-sync offline.
@@ -57,7 +80,8 @@ Renamed from `proton-qbit-port-sync` to `port-sync`. Re-run the installer to mov
 - Setup guide for torrenting on Windows behind Proton VPN: kill switch, interface binding, port forwarding, verification, troubleshooting.
 - MIT license.
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v1.0.0...v2.0.0

@@ -1,6 +1,6 @@
 # lint.ps1 - PSScriptAnalyzer with the repo's settings, and the ASCII check, the way CI runs them.
 #   ./tools/lint.ps1
-# Skips offline\ (the dev kit's bundled modules), dist\ (built downloads) and .venv\.
+# Skips offline\ (the dev kit's bundled modules), dist\ (built downloads), target\ and .venv\.
 # In the dev kit PSScriptAnalyzer loads from offline\powershell; in a clone, from the installed
 # copy of the version in tools/versions.psd1. Exits 1 on any finding.
 $ErrorActionPreference = 'Stop'
@@ -15,7 +15,7 @@ Write-Host "PSScriptAnalyzer $($m.Version) from $($m.ModuleBase)"
 
 $files = @(Get-ChildItem -LiteralPath $root -Recurse -File |
     Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' -and
-                   $_.FullName.Substring($root.Length + 1) -notmatch '^(offline|dist|\.venv|\.git)[\\/]' })
+                   $_.FullName.Substring($root.Length + 1) -notmatch '^(offline|dist|target|\.venv|\.git)[\\/]' })
 $settings = Join-Path $root 'PSScriptAnalyzerSettings.psd1'
 $found = @($files | ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Settings $settings })
 if ($found) { $found | Format-Table -AutoSize -Wrap | Out-String -Width 200 | Write-Host }

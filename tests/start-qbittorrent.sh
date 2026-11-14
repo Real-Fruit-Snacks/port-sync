@@ -1,7 +1,7 @@
 #!/bin/sh
-# Starts a throwaway qbittorrent-nox (4.6+) on 127.0.0.1:8080 for the 'Qbit' tests.
+# Starts a throwaway qbittorrent-nox (4.6+) on 127.0.0.1:8080 for the real_* tests in src/tests.rs.
 #   sh tests/start-qbittorrent.sh <password> [profile-dir]
-# Then: PORT_SYNC_TEST_QBIT_URL=http://127.0.0.1:8080 PORT_SYNC_TEST_QBIT_PASS=<password> pwsh -c 'Invoke-Pester ./tests'
+# Then: PORT_SYNC_TEST_QBIT_URL=http://127.0.0.1:8080 PORT_SYNC_TEST_QBIT_PASS=<password> cargo test
 set -eu
 pass="$1"
 profile="${2:-$(mktemp -d)}"

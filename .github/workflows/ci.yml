@@ -8,7 +8,8 @@ on:
 
 jobs:
   windows:
-    # Unit tests under both PowerShells, plus the installer against a real Task Scheduler.
+    # The program (format, clippy, its tests, the release build), then the installer: the lint,
+    # and its tests against a real Run key and Task Scheduler, under both PowerShells.
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -19,6 +20,30 @@ jobs:
         shell: ${{ matrix.shell }}
     steps:
       - uses: actions/checkout@v5
+      - name: Rust version
+        id: pins
+        shell: pwsh
+        run: '"rust=$((Import-PowerShellDataFile tools/versions.psd1).Rust)" >> $env:GITHUB_OUTPUT'
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pins.outputs.rust }}
+          components: clippy, rustfmt
+      - name: Format, clippy and tests
+        if: matrix.shell == 'pwsh'
+        shell: bash
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+      - name: Build port-sync.exe
+        shell: bash
+        run: |
+          cargo build --release --locked
+          # .cargo/config.toml links the C runtime in, so the exe runs without the VC++ redistributable
+          if grep -qai 'vcruntime140' target/release/port-sync.exe; then
+            echo "::error::port-sync.exe imports VCRUNTIME140.dll"; exit 1
+          fi
+          ls -l target/release/port-sync.exe
       - name: Pester and PSScriptAnalyzer
         run: |
           # The PowerShell Gallery is flaky from hosted runners: a download fails, or PSGallery
@@ -50,14 +75,25 @@ jobs:
           }
       - name: Lint and ASCII check
         run: ./tools/lint.ps1
-      - name: Test
+      - name: Installer tests
+        env:
+          PORT_SYNC_EXE: ${{ github.workspace }}\target\release\port-sync.exe
         run: ./tools/test.ps1
 
   qbittorrent:
-    # The sync against a real qBittorrent Web UI (qbittorrent-nox 4.6 from Ubuntu 24.04).
+    # The sync against a real qBittorrent Web UI (qbittorrent-nox 4.6 from Ubuntu 24.04). Also
+    # clippy and the tests on a second OS, which catches code only Windows uses.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Rust version
+        id: pins
+        shell: pwsh
+        run: '"rust=$((Import-PowerShellDataFile tools/versions.psd1).Rust)" >> $env:GITHUB_OUTPUT'
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pins.outputs.rust }}
+          components: clippy
       - name: qbittorrent-nox
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq qbittorrent-nox
@@ -67,39 +103,13 @@ jobs:
           echo "qbittorrent-nox $have (tools/versions.psd1: $want)"
           case "${have#*:}" in "$want"-*) ;; *) echo "qbittorrent-nox is $have, not $want; update tools/versions.psd1"; exit 1 ;; esac
           sh tests/start-qbittorrent.sh ci-pass-123
-      - name: Test
-        shell: pwsh
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Tests, the real_* ones against qbittorrent-nox
         env:
           PORT_SYNC_TEST_QBIT_URL: http://127.0.0.1:8080
           PORT_SYNC_TEST_QBIT_PASS: ci-pass-123
-        run: |
-          # The PowerShell Gallery is flaky from hosted runners: a download fails, or PSGallery
-          # isn't registered at all because the gallery was unreachable when PowerShellGet first
-          # loaded. Use the module if the runner image already has that version; otherwise
-          # re-register the gallery if needed and install, 5 tries, 15/30/45/60 s apart.
-          $modules = @((Import-PowerShellDataFile tools/versions.psd1).Modules | Where-Object { $_.Name -eq 'Pester' })
-          foreach ($m in $modules) {
-            if (Get-Module -ListAvailable $m.Name | Where-Object { $_.Version -eq [version]$m.Version }) {
-              Write-Host "$($m.Name) $($m.Version) is already on the runner"; continue
-            }
-            for ($try = 1; $true; $try++) {
-              try {
-                if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
-                  Write-Host 'PSGallery is not registered; registering it'
-                  Register-PSRepository -Default -ErrorAction Stop
-                }
-                Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
-                Install-Module $m.Name -RequiredVersion $m.Version -Repository PSGallery -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop
-                Write-Host "Installed $($m.Name) $($m.Version) (try $try)"
-                break
-              } catch {
-                if ($try -ge 5) { throw }
-                Write-Warning "Installing $($m.Name) failed (try $try): $_"
-                Start-Sleep -Seconds (15 * $try)
-              }
-            }
-          }
-          ./tools/test.ps1
+        run: cargo test --locked
 
   art:
     # The README panel is generated; fail if docs/assets/panel-*.svg no longer match docs/art/make-panel.py.

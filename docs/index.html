@@ -59,7 +59,7 @@
       <div class="install" id="install">
         <p class="install-label">Install, in a normal PowerShell window</p>
         <div class="cmd"><code>irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex</code><button class="copy" type="button" data-copy="irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex">Copy</button></div>
-        <p class="install-note">Run it as the Windows account you torrent with. It makes a Web UI password and tells you where to paste it in qBittorrent, does one test sync, then registers a task that starts at sign-in. One UAC prompt, for the task.</p>
+        <p class="install-note">Run it as the Windows account you torrent with. It makes a Web UI password and tells you where to paste it in qBittorrent, does one test sync, then starts port-sync in the notification area and at every sign-in. No admin rights needed.</p>
       </div>
     </div>
 
@@ -158,34 +158,31 @@
     <h2 id="use-h">Day to day</h2>
     <div class="cmds">
       <div><p>Watch it</p><pre><code>Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20</code></pre></div>
-      <div><p>One cycle: exit 0 if qBittorrent has the forwarded port, 1 if not</p><pre><code>powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\port-sync\port-sync.ps1" -Once</code></pre></div>
-      <div><p>Restart the task</p><pre><code>Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync</code></pre></div>
-      <div><p>Uninstall: removes the task and <code>%LOCALAPPDATA%\port-sync</code>; qBittorrent keeps its last port</p><pre><code>&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall</code></pre></div>
+      <div><p>One cycle: exit 0 if qBittorrent has the forwarded port, 1 if not</p><pre><code>&amp; "$env:LOCALAPPDATA\port-sync\port-sync.exe" --once | Write-Output</code></pre></div>
+      <div><p>Stop it; start it again from the Start menu</p><pre><code>&amp; "$env:LOCALAPPDATA\port-sync\port-sync.exe" --quit | Write-Output</code></pre></div>
+      <div><p>Uninstall: removes the sign-in entry and <code>%LOCALAPPDATA%\port-sync</code>; qBittorrent keeps its last port</p><pre><code>&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall</code></pre></div>
     </div>
-    <p class="note">Coming from <code>proton-qbit-port-sync</code> 1.x: run the same install line. It keeps your password file, replaces the old task, and moves to <code>%LOCALAPPDATA%\port-sync</code>.</p>
+    <p class="note">Coming from 2.x, or <code>proton-qbit-port-sync</code> 1.x: run the same install line. It keeps your password file and any setting you changed, removes the old task (one UAC prompt, for that only), and moves to <code>%LOCALAPPDATA%\port-sync</code>.</p>
   </div>
 </section>
 
 <section id="config" class="config" aria-labelledby="config-h">
   <div class="wrap config-grid">
     <div>
-      <h2 id="config-h">Parameters</h2>
-      <p>The defaults fit the setup guide. To change one for the task, add it to the task's arguments in an admin PowerShell. Re-running the installer resets them.</p>
-      <pre><code>$t = Get-ScheduledTask port-sync
-$t.Actions[0].Arguments += " -Adapter 'ProtonVPN TUN'"
-Set-ScheduledTask -InputObject $t
-Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync</code></pre>
+      <h2 id="config-h">Settings</h2>
+      <p>The defaults fit the setup guide. To change one, use <b>Edit settings</b> in port-sync's menu: it opens <code>%LOCALAPPDATA%\port-sync\config.json</code>, which can hold only the settings you change. port-sync picks them up within 15&nbsp;seconds.</p>
+      <pre><code>{ "adapter": "ProtonVPN TUN" }</code></pre>
     </div>
     <table class="params">
-      <thead><tr><th scope="col">Parameter</th><th scope="col">Default</th></tr></thead>
+      <thead><tr><th scope="col">Setting</th><th scope="col">Default</th></tr></thead>
       <tbody>
-        <tr><th scope="row"><code>-QbitUrl</code></th><td><code>http://127.0.0.1:8080</code></td></tr>
-        <tr><th scope="row"><code>-QbitUser</code></th><td><code>admin</code></td></tr>
-        <tr><th scope="row"><code>-ProtonLogs</code></th><td><code>%LOCALAPPDATA%\Proton\Proton VPN\Logs</code></td></tr>
-        <tr><th scope="row"><code>-Adapter</code></th><td><code>ProtonVPN</code>. <code>ProtonVPN TUN</code> for OpenVPN, <code>''</code> to skip the check</td></tr>
-        <tr><th scope="row"><code>-StateDir</code></th><td><code>%LOCALAPPDATA%\port-sync</code>: the password file and <code>sync.log</code></td></tr>
-        <tr><th scope="row"><code>-IntervalSec</code></th><td><code>15</code>: how often to read the Proton log</td></tr>
-        <tr><th scope="row"><code>-RecheckSec</code></th><td><code>60</code>: how often to re-read qBittorrent's port when Proton's hasn't changed</td></tr>
+        <tr><th scope="row"><code>qbitUrl</code></th><td><code>http://127.0.0.1:8080</code></td></tr>
+        <tr><th scope="row"><code>qbitUser</code></th><td><code>admin</code></td></tr>
+        <tr><th scope="row"><code>protonLogs</code></th><td><code>%LOCALAPPDATA%\Proton\Proton VPN\Logs</code></td></tr>
+        <tr><th scope="row"><code>adapter</code></th><td><code>ProtonVPN</code>. <code>ProtonVPN TUN</code> for OpenVPN, <code>""</code> to skip the check</td></tr>
+        <tr><th scope="row"><code>intervalSec</code></th><td><code>15</code>: how often to read the Proton log</td></tr>
+        <tr><th scope="row"><code>recheckSec</code></th><td><code>60</code>: how often to re-read qBittorrent's port when Proton's hasn't changed</td></tr>
+        <tr><th scope="row"><code>notifications</code></th><td><code>true</code>: notifications for a new port and for problems</td></tr>
       </tbody>
     </table>
   </div>
@@ -196,8 +193,8 @@ Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync</code></pre>
     <div>
       <h2 id="tested-h">Tested on</h2>
       <ul>
-        <li><b>Ubuntu 24.04</b>, PowerShell 7.4.6, qbittorrent-nox 4.6.3: the Pester suite, including the sync against a real Web UI, with simulated Proton log lines.</li>
-        <li><b>Windows Server 2022</b> (GitHub's <code>windows-latest</code>), Windows PowerShell 5.1 and PowerShell 7: the unit tests, and the installer against a real Task Scheduler.</li>
+        <li><b>Ubuntu 24.04</b>, qbittorrent-nox 4.6.3: the sync's tests, including against a real Web UI, with simulated Proton log lines.</li>
+        <li><b>Windows Server 2022</b> (GitHub's <code>windows-latest</code>): the sync's tests, and the installer under Windows PowerShell 5.1 and PowerShell 7.</li>
         <li><b>Not tested:</b> the Proton VPN app's real log on a Windows 10 or 11 desktop, and qBittorrent 5.x. If you run either, <a href="https://github.com/Real-Fruit-Snacks/port-sync/issues/new/choose">an issue</a> saying which versions worked is the most useful thing you can send.</li>
       </ul>
     </div>
@@ -205,7 +202,6 @@ Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync</code></pre>
       <h2>Known issues</h2>
       <ul>
         <li>Proton doesn't document the <code>Port pair</code> line. If an update changes it, <code>sync.log</code> says so and nothing else breaks.</li>
-        <li>A console window can flash at sign-in: <code>-WindowStyle Hidden</code> hides it only after PowerShell has started.</li>
         <li>qBittorrent has to be running to receive the port. A change made while it's closed lands within 60&nbsp;s of opening it.</li>
       </ul>
     </div>

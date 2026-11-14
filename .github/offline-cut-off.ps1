@@ -1,6 +1,7 @@
 # offline-cut-off.ps1 - for .github/workflows/offline.yml: cuts the job's later steps off from
 # the internet and the package registries, then checks the cut holds. Dead proxies, dead
-# registries, empty caches, no PowerShell Gallery. The runner's own link to GitHub is untouched:
+# registries, empty caches (cargo's too), no PowerShell Gallery. The runner's own link to
+# GitHub is untouched:
 # it doesn't read these variables, and nothing here changes the firewall or system proxy.
 $ErrorActionPreference = 'Stop'
 $dead  = 'http://127.0.0.1:9'
@@ -17,13 +18,15 @@ $vars  = [ordered]@{
     npm_config_registry           = "$dead/"
     npm_config_cache              = Join-Path $fresh 'npm'
     NUGET_PACKAGES                = Join-Path $fresh 'nuget'
+    CARGO_HOME                    = Join-Path $fresh 'cargo'
+    CARGO_NET_OFFLINE             = 'true'
 }
 foreach ($k in $vars.Keys) {
     [IO.File]::AppendAllText($env:GITHUB_ENV, "$k=$($vars[$k])`n")
     Set-Item -Path "env:$k" -Value $vars[$k]
     Write-Host "$k=$($vars[$k])"
 }
-foreach ($d in 'pip', 'npm', 'nuget') { New-Item -ItemType Directory -Path (Join-Path $fresh $d) -Force | Out-Null }
+foreach ($d in 'pip', 'npm', 'nuget', 'cargo') { New-Item -ItemType Directory -Path (Join-Path $fresh $d) -Force | Out-Null }
 
 # No PowerShell Gallery in either PowerShell: PowerShellGet in each, and PSResourceGet
 $unregister = 'if (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue) { Unregister-PSRepository -Name PSGallery }; ' +

@@ -1,4 +1,6 @@
-# test.ps1 - runs the Pester suite with the pinned Pester, the way CI does.
+# test.ps1 - runs the installer's Pester tests (tests/install.Tests.ps1) with the pinned Pester,
+# the way CI does. They install target\release\port-sync.exe, or $env:PORT_SYNC_EXE; the
+# program's own tests are cargo test.
 #   ./tools/test.ps1
 # In the dev kit Pester loads from offline\powershell; in a clone, from the installed copy of
 # the version in tools/versions.psd1. Exits non-zero when a test fails.

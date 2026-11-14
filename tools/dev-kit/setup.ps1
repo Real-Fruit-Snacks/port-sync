@@ -1,8 +1,9 @@
 # setup.ps1 - gets this port-sync dev kit ready on a Windows PC with no internet.
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\offline\setup.ps1 [-Python <python.exe>]
-# Needs no network. It checks the toolchains in offline\toolchains.psd1, checks Pester and
-# PSScriptAnalyzer load from offline\powershell at the pinned versions in each PowerShell, puts
-# the panel's wheels from offline\python into .venv, then prints the commands for the checks.
+# Needs no network. It checks the toolchains in offline\toolchains.psd1, points cargo at the
+# crates in offline\cargo\vendor, checks Pester and PSScriptAnalyzer load from
+# offline\powershell at the pinned versions in each PowerShell, puts the panel's wheels from
+# offline\python into .venv, then prints the commands for the checks.
 # Exits 1 and says what's missing if anything is. Windows PowerShell 5.1 or PowerShell 7.
 # The source is tools/dev-kit/setup.ps1; tools/build-dev-kit.ps1 copies it into the kit.
 [CmdletBinding()]
@@ -56,7 +57,41 @@ function Get-Python([string]$Exe, [string[]]$Pre) {
 # Files unzipped from a download keep the internet mark, which stops the modules loading.
 Get-ChildItem -LiteralPath $kit -Recurse -File | Unblock-File
 
-# 1. PowerShell. CI runs the lint and the tests in Windows PowerShell 5.1 and PowerShell 7.
+# 1. Rust, and cargo pointed at offline\cargo\vendor
+$cargo = Get-Command cargo.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+$rustc = Get-Command rustc.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $cargo -or -not $rustc) { Add-Missing 'Rust' 'cargo.exe and rustc.exe are not on PATH' }
+else {
+    $rv = (& $rustc.Source --version) -join ''
+    $hostLine = @(& $rustc.Source -vV | Where-Object { $_ -like 'host:*' }) -join ''
+    Say "$rv ($($hostLine -replace '^host:\s*', ''))"
+    if ($rv -notmatch ('^rustc ' + [regex]::Escape($pins.Rust) + '\b')) { Say "  CI uses Rust $($pins.Rust); another version usually works too." }
+    if ($hostLine -notmatch 'msvc') { Say '  The release is built with the x86_64-pc-windows-msvc toolchain.' }
+}
+$cargoDir    = Join-Path $kit '.cargo'
+$cargoConfig = Join-Path $cargoDir 'config.toml'
+$kitConfig   = (Get-Content -LiteralPath (Join-Path $offline 'cargo\config.toml') -Raw) -replace "`r`n", "`n"
+$current     = ''
+if (Test-Path -LiteralPath $cargoConfig) { $current = (Get-Content -LiteralPath $cargoConfig -Raw) -replace "`r`n", "`n" }
+if ($current.Contains('offline/cargo/vendor')) { Say '.cargo\config.toml already builds from offline\cargo\vendor' }
+else {
+    New-Item -ItemType Directory -Path $cargoDir -Force | Out-Null
+    $sep = if ($current -and -not $current.EndsWith("`n")) { "`n`n" } elseif ($current) { "`n" } else { '' }
+    [IO.File]::WriteAllText($cargoConfig, $current + $sep + $kitConfig, (New-Object Text.UTF8Encoding $false))
+    Say '.cargo\config.toml now builds from offline\cargo\vendor'
+}
+if ($cargo) {
+    Push-Location $kit
+    try {
+        & $cargo.Source metadata --offline --locked --format-version 1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { $missing.Add('cargo metadata --offline failed: a crate in Cargo.lock is not in offline\cargo\vendor; download the kit again.') }
+        else { Say "  every crate in Cargo.lock resolves from offline\cargo\vendor ($(@(Get-ChildItem -LiteralPath (Join-Path $offline 'cargo\vendor') -Directory).Count) crates)" }
+    } finally { Pop-Location }
+}
+$vs = Get-Toolchain 'Visual Studio Build Tools'
+Say "Rust's linker needs the Visual Studio Build Tools ($($vs.Usable)); cargo build says so if they're missing."
+
+# 2. PowerShell. CI runs the lint and the installer's tests in Windows PowerShell 5.1 and PowerShell 7.
 $shells = @()
 foreach ($s in @(@{ Name = 'Windows PowerShell'; Exe = 'powershell.exe' }, @{ Name = 'PowerShell 7'; Exe = 'pwsh.exe' })) {
     $t = Get-Toolchain $s.Name
@@ -66,7 +101,7 @@ foreach ($s in @(@{ Name = 'Windows PowerShell'; Exe = 'powershell.exe' }, @{ Na
     else { Say "$($s.Name) $($found.Version) at $($found.Path)"; $shells += , $found }
 }
 
-# 2. Pester and PSScriptAnalyzer from offline\powershell, checked in each PowerShell found.
+# 3. Pester and PSScriptAnalyzer from offline\powershell, checked in each PowerShell found.
 # tools\lint.ps1 and tools\test.ps1 load them from there by path.
 $moduleRoot = Join-Path $offline 'powershell'
 $absent = @($pins.Modules | Where-Object { -not (Test-Path -LiteralPath ([IO.Path]::Combine($moduleRoot, $_.Name, $_.Version, "$($_.Name).psd1"))) })
@@ -93,7 +128,7 @@ for (`$i = 0; `$i -lt `$p.Count; `$i += 2) {
     if (($env:PSModulePath -split ';') -notcontains $moduleRoot) { $env:PSModulePath = "$moduleRoot;$env:PSModulePath" }
 }
 
-# 3. Python for the panel: .venv, with the wheels from offline\python and nothing from an index
+# 4. Python for the panel: .venv, with the wheels from offline\python and nothing from an index
 $candidates = @()
 if ($Python) { $candidates += , @($Python) }
 else {
@@ -132,15 +167,17 @@ if (-not $py) {
     else { Say "  .venv has $(@(& $venvPy -m pip freeze --disable-pip-version-check) -join ', ')" }
 }
 
-# 4. Not needed for the checks
+# 5. Not needed for the checks
 $git = Get-Toolchain 'Git'
 if (Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue) { Say "Git: $(& git.exe --version)" }
 else { Say "Git isn't installed; you only need it to send a change: $($git.Url)" }
-Say 'qbittorrent-nox: the tests against a real Web UI run on Linux only; here they are skipped.'
+Say 'qbittorrent-nox: the tests against a real Web UI run on Linux only; here they run against a stand-in.'
 
 Write-Host ''
 Say 'Next, in this folder:'
 Write-Host "  cd `"$kit`""
+Write-Host '  cargo test --offline --locked'
+Write-Host '  cargo build --release --offline --locked'
 Write-Host '  powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\lint.ps1'
 Write-Host '  powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\test.ps1'
 Write-Host '  pwsh -NoProfile -ExecutionPolicy Bypass -File .\tools\test.ps1'
@@ -148,8 +185,8 @@ Write-Host '  .\.venv\Scripts\python.exe docs\art\make-panel.py'
 Write-Host '  powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build-offline.ps1'
 Write-Host ''
 Say 'make-panel.py redraws docs\assets\panel-*.svg; unchanged files mean the panel matches the script.'
-$version = (Select-String -LiteralPath (Join-Path $kit 'port-sync.ps1') -Pattern "PortSyncVersion = '([^']+)'").Matches[0].Groups[1].Value
-Say "build-offline.ps1 writes dist\port-sync-$version-offline.zip."
+$version = (Select-String -LiteralPath (Join-Path $kit 'Cargo.toml') -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+Say "cargo build writes target\release\port-sync.exe; build-offline.ps1 puts it in dist\port-sync-$version-offline.zip."
 Say 'tests\install.Tests.ps1 runs only elevated and replaces %LOCALAPPDATA%\port-sync: on a PC where'
 Say 'port-sync is installed, run the tests from a normal window.'
 Say "To load the modules by name in a window: `$env:PSModulePath = '$moduleRoot;' + `$env:PSModulePath"

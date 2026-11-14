@@ -39,7 +39,7 @@ If you're coming from a Linux setup (the official Proton CLI or app on an Arch-b
 | --- | --- | --- |
 | VPN interface to bind | `proton0` (WireGuard), `tun0` (OpenVPN) | `ProtonVPN` (WireGuard or Stealth), `ProtonVPN TUN` (OpenVPN) |
 | Forwarded port source | File `/run/user/$UID/Proton/VPN/forwarded_port` | No port file. Shown in the app; port-sync reads it from the app's log |
-| Port sync | bash + inotify + systemd user service | PowerShell script + Task Scheduler task |
+| Port sync | bash + inotify + systemd user service | `port-sync.exe` in the notification area, started at sign-in |
 | Web UI password storage | Plain text in the script | Encrypted to your Windows account (DPAPI) |
 | qBittorrent settings menu | Tools → Preferences | Tools → Options |
 | New risk | None | The Advanced kill switch can block Microsoft-account sign-in (step 2) |
@@ -139,29 +139,26 @@ $pw = -join ($bytes | ForEach-Object { $_.ToString('x2') })
 ConvertTo-SecureString $pw -AsPlainText -Force | ConvertFrom-SecureString | Set-Content "$dir\qbit-pass.txt"
 $pw | Set-Clipboard; "Web UI password (copied): $pw"
 
-# 2. The script
-Invoke-WebRequest 'https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/port-sync.ps1' -OutFile "$dir\port-sync.ps1"
+# 2. The program, checked against the release's SHA256SUMS.txt
+$rel = 'https://github.com/Real-Fruit-Snacks/port-sync/releases/latest/download'
+Invoke-WebRequest "$rel/port-sync.exe" -OutFile "$dir\port-sync.exe"
+Invoke-WebRequest "$rel/SHA256SUMS.txt" -OutFile "$dir\SHA256SUMS.txt"
+$want = ((Select-String -Path "$dir\SHA256SUMS.txt" -Pattern 'port-sync\.exe$').Line -split '\s+')[0]
+if ((Get-FileHash "$dir\port-sync.exe").Hash -ne $want) { throw 'checksum mismatch' }
 
 # 3. One test run (VPN connected, port forwarding on, qBittorrent open)
-powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\port-sync.ps1" -Once
+& "$dir\port-sync.exe" --once | Write-Output
+
+# 4. Start it at sign-in, from your own Run key (no admin rights), and start it now
+Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'port-sync' -Value "`"$dir\port-sync.exe`" --autostart"
+Start-Process "$dir\port-sync.exe"
 ```
 
-Then, in PowerShell **as administrator** (Task Scheduler wants admin to create a sign-in trigger), but for the account you torrent with, since the password file only decrypts for that account:
-
-```powershell
-$user     = "$env:USERDOMAIN\$env:USERNAME"
-$script   = "$env:LOCALAPPDATA\port-sync\port-sync.ps1"
-$action   = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`""
-$trigger  = New-ScheduledTaskTrigger -AtLogOn -User $user
-$princ    = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName 'port-sync' -Action $action -Trigger $trigger -Principal $princ -Settings $settings
-Start-ScheduledTask -TaskName 'port-sync'
-```
+Run it as the account you torrent with, since the password file only decrypts for that account.
 
 ## Manual fallback
 
-With the task off and speeds down: hover over **Port forwarding** in the Proton VPN app, then type the active port into qBittorrent → Tools → Options → Connection → Port used for incoming connections.
+With port-sync stopped and speeds down: hover over **Port forwarding** in the Proton VPN app, then type the active port into qBittorrent → Tools → Options → Connection → Port used for incoming connections.
 
 ## Optional qBittorrent settings
 
@@ -190,10 +187,10 @@ If qBittorrent closes to the tray, the X button only hides it. File → Exit (or
 | sync.log: `Web UI login rejected` | Re-run the installer after deleting `%LOCALAPPDATA%\port-sync\qbit-pass.txt`, paste the new password into the Web UI settings, then fully quit and reopen qBittorrent to clear any ban. If the password is right, untick "Enable Host header validation" |
 | sync.log: `can't decrypt ...qbit-pass.txt` | The file was made by another Windows account. Re-run the installer as the account you torrent with |
 | sync.log: `no forwarded port in the Proton VPN log yet` | Confirm you're on a P2P server with port forwarding on, then run the `Select-String` line from the quick reference. No matches means your app version logs elsewhere or differently: open an issue with a redacted sample line |
-| sync.log: `VPN adapter 'ProtonVPN' is not up` | `Get-NetAdapter` while connected shows the real name. On OpenVPN, add `-Adapter 'ProtonVPN TUN'` to the task ([README](../README.md#configuration)) |
+| sync.log: `VPN adapter 'ProtonVPN' is not up` | `Get-NetAdapter` while connected shows the real name. On OpenVPN, set `"adapter": "ProtonVPN TUN"` with **Edit settings** in port-sync's menu ([README](../README.md#settings)) |
 | sync.log: `qBittorrent Web UI not reachable` | qBittorrent isn't running, or the Web UI is off or on another port |
-| "Running scripts is disabled on this system" | Start it with `powershell -ExecutionPolicy Bypass -File ...` as the task does |
-| Sync stopped after sign-in | `Get-ScheduledTaskInfo port-sync` shows the last run result; `Start-ScheduledTask port-sync` starts it |
+| "Running scripts is disabled on this system" when installing | Run the installer as `powershell -ExecutionPolicy Bypass -File .\install.ps1`, or use the install line, which isn't affected |
+| Sync stopped after sign-in | `Get-Process port-sync` says whether it runs; start it from the Start menu, and check **Start at sign-in** is ticked in its menu |
 
 ## Quick reference
 
@@ -214,11 +211,11 @@ Select-String -Path "$env:LOCALAPPDATA\Proton\Proton VPN\Logs\client-logs.txt" -
 # qBittorrent Web UI probe ("Forbidden" = running, login required; no reply = not running)
 curl.exe -s http://127.0.0.1:8080/api/v2/app/webapiVersion
 
-# port-sync: one-off run, live log, task status, restart, remove
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\port-sync\port-sync.ps1" -Once
+# port-sync: one-off run, live log, is it running, stop, remove
+& "$env:LOCALAPPDATA\port-sync\port-sync.exe" --once | Write-Output
 Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20
-Get-ScheduledTaskInfo port-sync
-Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync
+Get-Process port-sync
+& "$env:LOCALAPPDATA\port-sync\port-sync.exe" --quit | Write-Output
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall
 ```
 

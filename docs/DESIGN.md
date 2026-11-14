@@ -61,7 +61,7 @@ Lamps and digits switch the way hardware does, with a 90ms fill transition at mo
 
 ## Voice
 
-Plain and exact, as in the README: real commands, real log lines, real parameter names, and limits stated near the top. The log lines are quoted exactly as `port-sync.ps1` writes them.
+Plain and exact, as in the README: real commands, real log lines, real parameter names, and limits stated near the top. The log lines are quoted exactly as `port-sync.exe` writes them.
 
 ## Files
 

@@ -1,7 +1,7 @@
 name: release
 
 # A vX.Y.Z tag: check the changelog, run CI and the offline checks, then publish the release
-# with notes from CHANGELOG.md, the offline zip, the dev kit and SHA256SUMS.txt.
+# with notes from CHANGELOG.md, port-sync.exe, the offline zip, the dev kit and SHA256SUMS.txt.
 on:
   push:
     tags: ['v*']
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - name: CHANGELOG.md has this version, and so does port-sync.ps1
+      - name: CHANGELOG.md has this version, and so does Cargo.toml
         shell: pwsh
         run: ./tools/release-notes.ps1 -Version ($env:GITHUB_REF_NAME.TrimStart('v'))
 
@@ -40,7 +40,7 @@ jobs:
       - name: SHA256SUMS.txt
         working-directory: dist
         run: |
-          sha256sum -- *.zip > SHA256SUMS.txt
+          sha256sum -- port-sync.exe *.zip > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - name: Notes from CHANGELOG.md
         shell: pwsh

@@ -1,18 +1,23 @@
 # build-dev-kit.ps1 - builds dist\port-sync-<version>-dev-windows-x64.zip: the repo at a git ref
-# plus every package its checks need, so port-sync can be linted, tested, its panel redrawn and
-# its offline zip built on a Windows x64 PC with no internet. It unzips to one folder,
-# port-sync-<version>-dev\, with offline\ next to the source:
+# plus every package its checks need, so port-sync can be built, linted, tested, its panel
+# redrawn and its offline zip built on a Windows x64 PC with no internet. It unzips to one
+# folder, port-sync-<version>-dev\, with offline\ next to the source:
+#   cargo\vendor\     every Rust crate Cargo.lock names (cargo vendor), each with its licence
+#   cargo\config.toml the cargo settings that build from cargo\vendor only
 #   powershell\       Pester and PSScriptAnalyzer, as Save-Module writes them
 #   python\           wheels for docs/art/requirements.txt, for CPython on win_amd64
 #   licences\         the licence and notices of every package above
 #   setup.ps1         from tools/dev-kit/setup.ps1
 #   toolchains.psd1   the toolchains the kit doesn't bundle, for setup.ps1
 #   README.md         from tools/dev-kit/README.template.md
-# Versions come from tools/versions.psd1 and docs/art/requirements.txt, the files CI reads.
+# The kit's root also gets THIRD-PARTY-LICENSES.txt (-ThirdPartyLicences), which the offline zip carries.
+# Versions come from tools/versions.psd1, Cargo.lock and docs/art/requirements.txt, the files
+# CI reads.
 #
 #   ./tools/build-dev-kit.ps1 [-Ref HEAD] [-OutDir <folder>] [-Python python] [-PwshVersion 7.x.y]
+#                             [-ThirdPartyLicences THIRD-PARTY-LICENSES.txt]
 #
-# Needs the internet, Git for Windows, a Python with pip (any version: it downloads wheels for
+# Needs the internet, Git for Windows, cargo, a Python with pip (any version: it downloads wheels for
 # the pinned one), PowerShellGet with the PowerShell Gallery, and Windows 10 or later (tar.exe).
 # The kit's toolchain table lists the PowerShell 7 and Git that built it; CI builds it on the
 # runner its tests use.
@@ -21,7 +26,8 @@ param(
     [string]$Ref = 'HEAD',
     [string]$OutDir,                 # default: dist\ in the repo
     [string]$Python = 'python',      # runs pip download
-    [string]$PwshVersion             # default: the pwsh on PATH
+    [string]$PwshVersion,            # default: the pwsh on PATH
+    [string]$ThirdPartyLicences      # default: THIRD-PARTY-LICENSES.txt in the repo
 )
 
 $ErrorActionPreference = 'Stop'
@@ -68,10 +74,12 @@ function Get-GitHubJson([string]$Path) {
     Invoke-WithRetry "GitHub API $Path" { Invoke-RestMethod -Uri "https://api.github.com/$Path" -Headers $headers }
 }
 
-$src = & git -C $root show "$($Ref):port-sync.ps1"
-if ($LASTEXITCODE -ne 0) { throw "git can't read port-sync.ps1 at $Ref" }
-if (($src -join "`n") -notmatch "PortSyncVersion = '([^']+)'") { throw "no PortSyncVersion in port-sync.ps1 at $Ref" }
+$src = & git -C $root show "$($Ref):Cargo.toml"
+if ($LASTEXITCODE -ne 0) { throw "git can't read Cargo.toml at $Ref" }
+if (($src -join "`n") -notmatch '(?m)^version = "([^"]+)"') { throw "no version in Cargo.toml at $Ref" }
 $version = $Matches[1]
+if (-not $ThirdPartyLicences) { $ThirdPartyLicences = Join-Path $root 'THIRD-PARTY-LICENSES.txt' }
+if (-not (Test-Path -LiteralPath $ThirdPartyLicences)) { throw "no $ThirdPartyLicences; run tools/third-party-licences.ps1" }
 $name    = "port-sync-$version-dev"
 $stage   = Join-Path ([IO.Path]::GetTempPath()) ('port-sync-dev-kit-' + [guid]::NewGuid().ToString('N'))
 $kit     = Join-Path $stage $name
@@ -92,7 +100,29 @@ try {
     $pySeries = (($pins.Python -split '\.')[0..1]) -join '.'
     $licences = Join-Path $offline 'licences'
 
-    # 2. PowerShell modules: offline\powershell\<Name>\<Version>\
+    Copy-Item -LiteralPath $ThirdPartyLicences -Destination (Join-Path $kit 'THIRD-PARTY-LICENSES.txt')
+
+    # 2. Rust crates: everything Cargo.lock names, for every platform, each with its licence
+    $have = (& rustc --version) -join ''
+    if ($have -notmatch "^rustc $([regex]::Escape($pins.Rust))\b") { Write-Warning "tools\versions.psd1 pins Rust $($pins.Rust); this machine runs '$have'." }
+    New-Item -ItemType Directory -Path (Join-Path $offline 'cargo') -Force | Out-Null
+    Push-Location $kit
+    try {
+        Invoke-WithRetry 'cargo vendor' { Invoke-Native 'cargo' @('vendor', '--locked', '--versioned-dirs', 'offline/cargo/vendor') | Out-Null }
+    } finally { Pop-Location }
+    [IO.File]::WriteAllText((Join-Path $offline 'cargo\config.toml'), @'
+# Build from the crates in offline\cargo\vendor only. offline\setup.ps1 adds this to
+# .cargo\config.toml; the path is relative to the kit's root.
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "offline/cargo/vendor"
+'@)
+    $crates = @(Get-ChildItem -LiteralPath (Join-Path $offline 'cargo\vendor') -Directory)
+    Say "vendored $($crates.Count) crates"
+
+    # 3. PowerShell modules: offline\powershell\<Name>\<Version>\
     $modules = Join-Path $offline 'powershell'
     New-Item -ItemType Directory -Path $modules -Force | Out-Null
     foreach ($m in $pins.Modules) {
@@ -140,7 +170,7 @@ try {
         if ($unknown) { throw "$($m.Name) $($m.Version) ships DLLs with no licence here: $($unknown.Name -join ', ')" }
     }
 
-    # 3. Wheels for the panel, binary only, for CPython <series> on Windows x64
+    # 4. Wheels for the panel, binary only, for CPython <series> on Windows x64
     $wheels = Join-Path $offline 'python'
     $req    = Join-Path $kit 'docs\art\requirements.txt'
     Invoke-WithRetry 'pip download' {
@@ -170,7 +200,7 @@ try {
         Say "wheel $($whl.Name)"
     }
 
-    # 4. The toolchains the kit doesn't bundle, at the versions CI uses
+    # 5. The toolchains the kit doesn't bundle, at the versions CI uses
     if (-not $PwshVersion) {
         $pwsh = Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
         if (-not $pwsh) { throw 'PowerShell 7 (pwsh) is not on PATH; pass -PwshVersion' }
@@ -187,6 +217,10 @@ try {
     if (-not $gitUrl) { throw "no 64-bit installer in Git for Windows v$gitVersion" }
 
     $toolchains = @(
+        [ordered]@{ Name = 'Rust'; Version = $pins.Rust; Minimum = $pins.Rust; Usable = "$($pins.Rust), x86_64-pc-windows-msvc"
+                    For = 'building and testing port-sync.exe'; Url = "https://static.rust-lang.org/dist/rust-$($pins.Rust)-x86_64-pc-windows-msvc.msi"; Note = '' }
+        [ordered]@{ Name = 'Visual Studio Build Tools'; Version = '2022'; Minimum = ''; Usable = '2019 or later, with the C++ workload'
+                    For = "Rust's linker"; Url = 'https://aka.ms/vs/17/release/vs_BuildTools.exe'; Note = 'For a PC with no internet, make an offline layout first (vs_BuildTools.exe --layout)' }
         [ordered]@{ Name = 'Windows PowerShell'; Version = '5.1'; Minimum = '5.1'; Usable = '5.1'
                     For = 'the lint and the tests, which CI runs in both PowerShells'; Url = ''; Note = 'Built into Windows 10 and 11' }
         [ordered]@{ Name = 'PowerShell 7'; Version = $PwshVersion; Minimum = $pwshMinimum; Usable = "$pwshMinimum or later"
@@ -208,7 +242,7 @@ try {
     $psd1 += '    )', '}'
     Set-Content -LiteralPath (Join-Path $offline 'toolchains.psd1') -Value $psd1 -Encoding Ascii
 
-    # 5. setup.ps1 and README.md
+    # 6. setup.ps1 and README.md
     Copy-Item -LiteralPath (Join-Path $kit 'tools\dev-kit\setup.ps1') -Destination (Join-Path $offline 'setup.ps1')
     $rows = foreach ($t in $toolchains) {
         $link = if ($t.Url) { "[$(($t.Url -split '/')[-1])]($($t.Url))" } else { '-' }
@@ -221,11 +255,12 @@ try {
     $readme = (Get-Content -LiteralPath (Join-Path $kit 'tools\dev-kit\README.template.md') -Raw) `
         -replace '\{\{VERSION\}\}', $version -replace '\{\{PYSERIES\}\}', $pySeries `
         -replace '\{\{MODULES\}\}', $listModules -replace '\{\{WHEELS\}\}', $listWheels `
+        -replace '\{\{CRATES\}\}', $crates.Count -replace '\{\{RUST\}\}', $pins.Rust `
         -replace '\{\{TOOLCHAINS\}\}', ($rows -join "`n")
     $readme = ($readme -split "`r?`n" | Where-Object { $_ -notmatch '^<!--' }) -join "`r`n"
     [IO.File]::WriteAllText((Join-Path $offline 'README.md'), $readme)
 
-    # 6. The zip: one folder, port-sync-<version>-dev\
+    # 7. The zip: one folder, port-sync-<version>-dev\
     New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
     $out = Join-Path $OutDir "$name-windows-x64.zip"
     if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }

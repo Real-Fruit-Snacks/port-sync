@@ -16,6 +16,8 @@ Thumbs.db
 desktop.ini
 *.swp
 
-# Built downloads, and the dev kit's Python environment
+# Build output, built downloads, the dev kit's Python environment
+/target/
+THIRD-PARTY-LICENSES.txt
 dist/
 .venv/

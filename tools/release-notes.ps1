@@ -2,7 +2,7 @@
 # the shape earlier releases used: the summary paragraph, then every entry as one list, with the
 # ### headings and the closing full stops dropped.
 #   ./tools/release-notes.ps1 -Version 2.1.0 [-Out notes.md]
-# Fails if CHANGELOG.md has no '## [<version>] - <date>' section or port-sync.ps1 is another
+# Fails if CHANGELOG.md has no '## [<version>] - <date>' section or Cargo.toml is another
 # version, so a tag can't publish without its changelog entry.
 param(
     [Parameter(Mandatory = $true)][string]$Version,
@@ -12,9 +12,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-$sync = Get-Content -LiteralPath (Join-Path $root 'port-sync.ps1') -Raw
-if ($sync -notmatch "PortSyncVersion = '([^']+)'") { throw 'no PortSyncVersion in port-sync.ps1' }
-if ($Matches[1] -ne $Version) { throw "port-sync.ps1 is $($Matches[1]), not $Version" }
+$cargo = Get-Content -LiteralPath (Join-Path $root 'Cargo.toml') -Raw
+if ($cargo -notmatch '(?m)^version = "([^"]+)"') { throw 'no version in Cargo.toml' }
+if ($Matches[1] -ne $Version) { throw "Cargo.toml is $($Matches[1]), not $Version" }
 
 $lines = @(Get-Content -LiteralPath (Join-Path $root 'CHANGELOG.md') -Encoding UTF8)
 $head  = '^## \[' + [regex]::Escape($Version) + '\] - \d{4}-\d{2}-\d{2}\s*$'

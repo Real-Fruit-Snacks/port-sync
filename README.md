@@ -11,20 +11,20 @@ Keeps qBittorrent's port synced to Proton VPN
 irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex
 ```
 
-Run it in a normal PowerShell window as the Windows account you torrent with. It generates a Web UI password, tells you where to paste it in qBittorrent, does one test sync, then registers a scheduled task that runs at sign-in. One UAC prompt, for the task.
+Run it in a normal PowerShell window as the Windows account you torrent with. It generates a Web UI password, tells you where to paste it in qBittorrent, does one test sync, then starts port-sync in the notification area and at every sign-in. No admin rights needed.
 
-No internet on that PC: unzip `port-sync-<version>-offline.zip` from the [latest release](https://github.com/Real-Fruit-Snacks/port-sync/releases/latest) and run `powershell -ExecutionPolicy Bypass -File .\install.ps1` in that folder. It installs the `port-sync.ps1` next to it instead of downloading one; add `-Uninstall` to remove it.
+No internet on that PC: unzip `port-sync-<version>-offline.zip` from the [latest release](https://github.com/Real-Fruit-Snacks/port-sync/releases/latest) and run `powershell -ExecutionPolicy Bypass -File .\install.ps1` in that folder. It installs the `port-sync.exe` next to it instead of downloading one; add `-Uninstall` to remove it.
 
 Proton VPN hands out a new forwarded port on most reconnects. Until qBittorrent listens on that port, peers can't connect in, so downloads slow down and seeding mostly stops. On Linux the Proton app writes the port to a file; the Windows app only writes it to its own log, so port-sync reads the log every 15 seconds and sets the port through qBittorrent's Web UI API. The panel above acts that out, faster. It assumes the VPN and qBittorrent are already set up so torrent traffic can't leave outside the tunnel; [docs/setup-guide.md](docs/setup-guide.md) is that setup, step by step.
 
-Coming from `proton-qbit-port-sync` 1.x: run the same install line. It keeps your password file, replaces the old task, and moves to `%LOCALAPPDATA%\port-sync`.
+Coming from 2.x, or `proton-qbit-port-sync` 1.x: run the same install line. It keeps your password file and any setting you changed, removes the old task (one UAC prompt, for that only), and moves to `%LOCALAPPDATA%\port-sync`.
 
 ## What it writes to sync.log
 
-`port-sync.ps1 -Once`, run against a Web UI listening on 49160 while Proton's log said `Port pair 48213->48213`:
+`port-sync.exe --once`, run against a Web UI listening on 49160 while Proton's log said `Port pair 48213->48213`:
 
 ```text
-2026-11-05 20:47:33 [port-sync] port-sync 2.1.0 watching C:\Users\you\AppData\Local\Proton\Proton VPN\Logs
+2026-11-05 20:47:33 [port-sync] port-sync 3.0.0 watching C:\Users\you\AppData\Local\Proton\Proton VPN\Logs
 2026-11-05 20:47:33 [port-sync] listening port updated: 49160 -> 48213
 ```
 
@@ -43,51 +43,47 @@ The same call sends qBittorrent `{"listen_port":48213,"random_port":false,"upnp"
 
 ```powershell
 Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20                  # watch it
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\port-sync\port-sync.ps1" -Once   # one cycle: exit 0 in sync, 1 not
-Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync                         # restart
+& "$env:LOCALAPPDATA\port-sync\port-sync.exe" --once | Write-Output           # one cycle: exit 0 in sync, 1 not
+& "$env:LOCALAPPDATA\port-sync\port-sync.exe" --quit | Write-Output           # stop; start it again from the Start menu
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall   # remove
 ```
 
-Uninstalling removes the task and `%LOCALAPPDATA%\port-sync`; qBittorrent keeps its last port. `port-sync.ps1 -Version` prints the version.
+Uninstalling removes the sign-in entry, the Start menu entry and `%LOCALAPPDATA%\port-sync`; qBittorrent keeps its last port. `port-sync.exe --version` prints the version. (`| Write-Output` makes PowerShell wait for `port-sync.exe` and show what it prints.)
 
 ## Tested on
 
-- Ubuntu 24.04 · PowerShell 7.4.6 · qbittorrent-nox 4.6.3: the Pester suite, including the sync against a real Web UI, with simulated Proton log lines
-- Windows Server 2022 (GitHub `windows-latest`) · Windows PowerShell 5.1 and PowerShell 7: unit tests, and the installer against a real Task Scheduler (in [CI](.github/workflows/ci.yml))
+- Ubuntu 24.04 · qbittorrent-nox 4.6.3: the sync's tests, including against a real Web UI, with simulated Proton log lines
+- Windows Server 2022 (GitHub `windows-latest`): the sync's tests, and the installer under Windows PowerShell 5.1 and PowerShell 7 (in [CI](.github/workflows/ci.yml))
 - *Not* tested: the Proton VPN app's real log on a real Windows 10/11 desktop, and qBittorrent 5.x. If you run either, an issue saying which versions worked or didn't is the most useful thing you can send.
 
 ## Known issues
 
 - Proton doesn't document the `Port pair 54692->54692` log line. The path and wording come from two community tools that rely on it ([qbit-proton-port](https://github.com/EudesRobin/qbit-proton-port), [Auto-Port-Sync](https://github.com/Jaques-and-sons/ProtonVPN-qBittorrent-Auto-Port-Sync)). If an app update changes it, `sync.log` says `no forwarded port in the Proton VPN log yet` and nothing else breaks.
-- A console window can flash at sign-in. `-WindowStyle Hidden` hides it after `powershell.exe` has started, not before.
 - The password file is DPAPI-encrypted to the account that created it. Run the installer as the account you torrent with, not as a separate admin account.
 - qBittorrent has to be running to receive the port. A change made while it's closed lands within 60 s of opening it.
-- After a rejected login the script waits for the password file to change, or 30 minutes, before trying again, because qBittorrent bans an address after 5 failures in a row.
+- After a rejected login port-sync waits for the password file to change, or 30 minutes, before trying again, because qBittorrent bans an address after 5 failures in a row.
 
 ## Settings
 
 Defaults fit the setup guide: Web UI on `127.0.0.1:8080`, user `admin`, WireGuard adapter `ProtonVPN`.
 
-| Parameter | Default | Purpose |
+| Setting | Default | Purpose |
 |---|---|---|
-| `-QbitUrl` | `http://127.0.0.1:8080` | qBittorrent Web UI address |
-| `-QbitUser` | `admin` | Web UI username |
-| `-ProtonLogs` | `%LOCALAPPDATA%\Proton\Proton VPN\Logs` | Folder with `client-logs.txt` |
-| `-Adapter` | `ProtonVPN` | Adapter that must be up before syncing. `ProtonVPN TUN` for OpenVPN, `''` to skip the check |
-| `-StateDir` | `%LOCALAPPDATA%\port-sync` | Password file and `sync.log` |
-| `-IntervalSec` | `15` | How often to read the Proton log |
-| `-RecheckSec` | `60` | How often to re-read qBittorrent's port when Proton's hasn't changed |
+| `qbitUrl` | `http://127.0.0.1:8080` | qBittorrent Web UI address |
+| `qbitUser` | `admin` | Web UI username |
+| `protonLogs` | `%LOCALAPPDATA%\Proton\Proton VPN\Logs` | Folder with `client-logs.txt` |
+| `adapter` | `ProtonVPN` | Adapter that must be up before syncing. `ProtonVPN TUN` for OpenVPN, `""` to skip the check |
+| `intervalSec` | `15` | How often to read the Proton log |
+| `recheckSec` | `60` | How often to re-read qBittorrent's port when Proton's hasn't changed |
+| `notifications` | `true` | Notifications for a new port and for problems |
 
-To change one for the scheduled task, in an admin PowerShell (OpenVPN as the example):
+To change one, use **Edit settings** in port-sync's menu (click its icon). It opens `%LOCALAPPDATA%\port-sync\config.json`, which can hold only the settings you change; port-sync picks them up within 15 seconds. OpenVPN as the example:
 
-```powershell
-$t = Get-ScheduledTask port-sync
-$t.Actions[0].Arguments += " -Adapter 'ProtonVPN TUN'"
-Set-ScheduledTask -InputObject $t
-Stop-ScheduledTask port-sync; Start-ScheduledTask port-sync
+```json
+{ "adapter": "ProtonVPN TUN" }
 ```
 
-Re-running the installer resets the task to the defaults.
+For `--once` they are options too; `port-sync.exe --help` lists them.
 
 ## License
 
