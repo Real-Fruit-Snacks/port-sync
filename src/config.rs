@@ -219,6 +219,7 @@ pub fn resolve(args: &Args) -> (Settings, Vec<String>) {
 }
 
 /// config.json with every setting at its current value, for the tray's "Edit settings".
+#[cfg_attr(not(windows), allow(dead_code))] // the tray's Edit settings
 pub fn write_default_config(s: &Settings) -> std::io::Result<()> {
     let mut m = Map::new();
     m.insert("qbitUrl".into(), json!(s.qbit_url));

@@ -60,6 +60,7 @@ impl Syncer {
     }
 
     /// New settings from config.json: keep the state, re-read qBittorrent at the next cycle.
+    #[cfg_attr(not(windows), allow(dead_code))] // the tray only
     pub fn reconfigure(&mut self, settings: Settings) {
         self.log.path = settings.sync_log();
         self.settings = settings;
@@ -67,6 +68,7 @@ impl Syncer {
     }
 
     /// Make the next cycle ask qBittorrent even if Proton's port hasn't changed.
+    #[cfg_attr(not(windows), allow(dead_code))] // the tray only
     pub fn force_check(&mut self) {
         self.last_check = None;
     }
