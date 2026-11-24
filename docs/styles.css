@@ -105,8 +105,7 @@ p { margin: 0 0 1rem; text-wrap: pretty; }
 .page-scroll {
   position: relative;
   background:
-    radial-gradient(62% 48% at 14% 0%, color-mix(in oklab, var(--rfs-steel) 24%, transparent), transparent 68%),
-    radial-gradient(56% 44% at 88% 4%, color-mix(in oklab, var(--rfs-beacon) 16%, transparent), transparent 68%),
+    linear-gradient(125deg in oklab, color-mix(in oklab, var(--rfs-steel) 16%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 12%, transparent) 100%),
     var(--rfs-bg);
 }
 @media (prefers-reduced-motion: no-preference) { .page-scroll { scroll-behavior: smooth; } }
