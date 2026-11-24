@@ -1,6 +1,6 @@
 [package]
 name = "port-sync"
-version = "3.0.0"
+version = "3.0.1"
 authors = ["Real-Fruit-Snacks"]
 description = "Keeps qBittorrent's listening port synced to the port Proton VPN forwards"
 license = "MIT"

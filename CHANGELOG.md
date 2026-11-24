@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-11-24
+
+Visual refresh to the Cyclorama Dawn `v2.1.0` palette. Sync behaviour, settings, and `sync.log` are unchanged.
+
+### Changed
+- Application icon (`app.ico`) and notification area status icons updated to Cyclorama Dawn `v2.1.0` (Matte Dark base, Mint in-sync, Slate waiting, Signal Crimson fault).
+- Project page, README art, and cover assets updated to Cyclorama Dawn `v2.1.0` with a below-header scroll shell and wide-dash controller layout.
+
 ## [3.0.0] - 2026-11-13
 
 port-sync is now one small program, `port-sync.exe`, that sits in the notification area: the icon shows whether qBittorrent has Proton's port, and a notification says when the port changes or something needs fixing. The sync itself is the same, line for line, and so is `sync.log`. Re-running the install line updates from 2.x or 1.x: it removes the old scheduled task (one UAC prompt, for that only) and keeps your password file and any setting you changed.
@@ -80,7 +88,8 @@ Renamed from `proton-qbit-port-sync` to `port-sync`. Re-run the installer to mov
 - Setup guide for torrenting on Windows behind Proton VPN: kill switch, interface binding, port forwarding, verification, troubleshooting.
 - MIT license.
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/Real-Fruit-Snacks/port-sync/compare/v2.0.0...v2.0.1
