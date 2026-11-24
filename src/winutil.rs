@@ -153,16 +153,16 @@ pub enum Look {
     InSync,
     /// Both bars grey: waiting for the VPN, Proton or qBittorrent.
     Waiting,
-    /// qBittorrent's bar pink: something needs fixing.
+    /// qBittorrent's bar Signal Crimson: something needs fixing.
     Problem,
 }
 
 type Rgb = (u8, u8, u8);
-const TILE: Rgb = (0x0C, 0x0D, 0x10);
+const TILE: Rgb = (0x05, 0x05, 0x07);
 const AMBER: Rgb = (0xFF, 0xC2, 0x47);
 const MINT: Rgb = (0x3D, 0xDC, 0x97);
-const RASP: Rgb = (0xF0, 0x62, 0x92);
-const GREY: Rgb = (0x6B, 0x70, 0x7A);
+const FAULT: Rgb = (0xFF, 0x5C, 0x6C);
+const GREY: Rgb = (0x67, 0x6B, 0x78);
 
 /// Coverage of a rounded rectangle at (x, y), in the icon's 64-unit space.
 fn in_rrect(x: f32, y: f32, rx: f32, ry: f32, rw: f32, rh: f32, r: f32) -> bool {
@@ -177,7 +177,7 @@ pub fn render(look: Look, size: u32) -> Vec<u8> {
     let (top, bottom) = match look {
         Look::InSync => (AMBER, MINT),
         Look::Waiting => (GREY, GREY),
-        Look::Problem => (AMBER, RASP),
+        Look::Problem => (AMBER, FAULT),
     };
     let n = 4;
     let scale = 64.0 / size as f32;

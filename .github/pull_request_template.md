@@ -1,13 +1,10 @@
-## What changes
+## Summary
 
-## Why
+- Plain summary of what changed and why.
 
-## Tested against
+## Verification
 
-- Windows:
-- Proton VPN app:
-- qBittorrent:
-
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass
-- [ ] A change to `install.ps1` still works under Windows PowerShell 5.1, and `./tools/lint.ps1` passes
-- [ ] `CHANGELOG.md` updated under *Unreleased*
+- [ ] Tested locally on target OS/runtime (note OS & version below)
+- [ ] CLI honors `NO_COLOR`, non-TTY stdout, and exit codes `0` / `1` / `2` (if applicable)
+- [ ] Web UI uses `rfs.css` + `rfs-components.css`, below-header scrollbars, and zero native `alert()`/`confirm()`/`prompt()` (if applicable)
+- [ ] Updated README / `cover.toml` if commands or screenshots changed
