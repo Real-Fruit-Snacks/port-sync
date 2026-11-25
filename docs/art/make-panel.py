@@ -161,7 +161,7 @@ def build(theme):
     o.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="16" fill="{c["plate"]}" stroke="{c["line"]}"/>')
     o.append(f'<rect x="16" y="1" width="{W - 32}" height="3" rx="1.5" fill="url(#horizon)"/>')
     o.append(text("PORT-SYNC", 40, 52, 22, "disp", c["ink"], ls=0.08))
-    o.append(text("3.0.1", 960, 52, 14, "mono", c["mute"], ls=0.08, anchor="end"))
+    o.append(text("3.0.2", 960, 52, 14, "mono", c["mute"], ls=0.08, anchor="end"))
 
     # --- the two readouts ---
     wy, wh, ww = 108, 176, 380

@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-11-24
+
+Upgraded the Windows application icon and runtime notification area status icons to full Cyclorama Dawn `v2.1.0` fidelity.
+
+### Changed
+- Packaged `assets/app.ico` as a 9-size multi-resolution Windows icon (`16`, `20`, `24`, `32`, `40`, `48`, `64`, `128`, `256px`) from the canonical Cyclorama Dawn marks so Explorer, taskbar, and Start Menu views render crisply at every scale.
+- Added the Cyclorama Dawn hairline frame (`#3B3E4A`) and subtle rising Glacial Steel → Maritime Beacon Orange wash behind the notification area status bars in `src/winutil.rs`.
+
 ## [3.0.1] - 2026-11-24
 
 Visual refresh to the Cyclorama Dawn `v2.1.0` palette. Sync behaviour, settings, and `sync.log` are unchanged.

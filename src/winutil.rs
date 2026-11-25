@@ -159,10 +159,45 @@ pub enum Look {
 
 type Rgb = (u8, u8, u8);
 const TILE: Rgb = (0x05, 0x05, 0x07);
+const BORDER: Rgb = (0x3B, 0x3E, 0x4A);
 const AMBER: Rgb = (0xFF, 0xC2, 0x47);
 const MINT: Rgb = (0x3D, 0xDC, 0x97);
 const FAULT: Rgb = (0xFF, 0x5C, 0x6C);
 const GREY: Rgb = (0x67, 0x6B, 0x78);
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t
+}
+
+fn mix_rgb(a: Rgb, b: Rgb, t: f32) -> Rgb {
+    let t = t.clamp(0.0, 1.0);
+    (
+        lerp(a.0 as f32, b.0 as f32, t).round() as u8,
+        lerp(a.1 as f32, b.1 as f32, t).round() as u8,
+        lerp(a.2 as f32, b.2 as f32, t).round() as u8,
+    )
+}
+
+/// Cyclorama Dawn lower-edge Steel -> Beacon wash over matte #050507.
+fn tile_bg(x: f32, y: f32) -> Rgb {
+    let u = (x / 64.0).clamp(0.0, 1.0);
+    let v = (y / 64.0).clamp(0.0, 1.0);
+    let wash = if u < 0.44 {
+        mix_rgb((0x13, 0x39, 0x54), (0x1F, 0x54, 0x7A), u / 0.44)
+    } else if u < 0.76 {
+        mix_rgb((0x1F, 0x54, 0x7A), (0xCC, 0x50, 0x16), (u - 0.44) / 0.32)
+    } else {
+        mix_rgb((0xCC, 0x50, 0x16), (0xF0, 0x6E, 0x2B), (u - 0.76) / 0.24)
+    };
+    let fade = if v < 0.42 {
+        (v / 0.42) * 0.08
+    } else if v < 0.74 {
+        lerp(0.08, 0.58, (v - 0.42) / 0.32)
+    } else {
+        lerp(0.58, 1.0, (v - 0.74) / 0.26)
+    };
+    mix_rgb(TILE, wash, fade * 0.55)
+}
 
 /// Coverage of a rounded rectangle at (x, y), in the icon's 64-unit space.
 fn in_rrect(x: f32, y: f32, rx: f32, ry: f32, rw: f32, rh: f32, r: f32) -> bool {
@@ -192,12 +227,14 @@ pub fn render(look: Look, size: u32) -> Vec<u8> {
                     if !in_rrect(x, y, 0.0, 0.0, 64.0, 64.0, 14.0) {
                         continue;
                     }
-                    let c = if in_rrect(x, y, 12.0, 16.0, 40.0, 12.0, 2.5) {
+                    let c = if !in_rrect(x, y, 2.2, 2.2, 59.6, 59.6, 11.8) {
+                        BORDER
+                    } else if in_rrect(x, y, 12.0, 16.0, 40.0, 12.0, 2.5) {
                         top
                     } else if in_rrect(x, y, 12.0, 36.0, 40.0, 12.0, 2.5) {
                         bottom
                     } else {
-                        TILE
+                        tile_bg(x, y)
                     };
                     a += 1.0;
                     r += c.0 as f32;
