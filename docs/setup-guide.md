@@ -187,7 +187,7 @@ If qBittorrent closes to the tray, the X button only hides it. File → Exit (or
 | sync.log: `Web UI login rejected` | Re-run the installer after deleting `%LOCALAPPDATA%\port-sync\qbit-pass.txt`, paste the new password into the Web UI settings, then fully quit and reopen qBittorrent to clear any ban. If the password is right, untick "Enable Host header validation" |
 | sync.log: `can't decrypt ...qbit-pass.txt` | The file was made by another Windows account. Re-run the installer as the account you torrent with |
 | sync.log: `no forwarded port in the Proton VPN log yet` | Confirm you're on a P2P server with port forwarding on, then run the `Select-String` line from the quick reference. No matches means your app version logs elsewhere or differently: open an issue with a redacted sample line |
-| sync.log: `VPN adapter 'ProtonVPN' is not up` | `Get-NetAdapter` while connected shows the real name. On OpenVPN, set `"adapter": "ProtonVPN TUN"` with **Edit settings** in port-sync's menu ([README](../README.md#settings)) |
+| sync.log: `VPN adapter 'ProtonVPN' is not up` | `Get-NetAdapter` while connected shows the real name. On OpenVPN, set `"adapter": "ProtonVPN TUN"` with **Edit settings** in port-sync's menu ([Settings](USAGE.md#settings)) |
 | sync.log: `qBittorrent Web UI not reachable` | qBittorrent isn't running, or the Web UI is off or on another port |
 | "Running scripts is disabled on this system" when installing | Run the installer as `powershell -ExecutionPolicy Bypass -File .\install.ps1`, or use the install line, which isn't affected |
 | Sync stopped after sign-in | `Get-Process port-sync` says whether it runs; start it from the Start menu, and check **Start at sign-in** is ticked in its menu |
