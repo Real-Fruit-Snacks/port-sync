@@ -24,7 +24,7 @@
 <script>
   (function () {
     try {
-      var t = localStorage.getItem('rfs-theme');
+      var t = localStorage.getItem('rfs-theme') || localStorage.getItem('color-scheme');
       if (t === 'light' || t === 'dayshift') {
         document.documentElement.dataset.theme = 'light';
         var cs = document.querySelector('meta[name="color-scheme"]');
@@ -74,7 +74,7 @@
 <section class="hero" aria-labelledby="hero-h">
   <div class="wrap hero-grid">
     <div class="hero-head">
-      <span class="rfs-badge"><span class="k">[rust]</span> Windows tray daemon · local-first</span>
+      <span class="rfs-badge b-steel"><span class="k">[rust]</span> Windows tray daemon · local-first</span>
       <h1 id="hero-h">KEEPS QBITTORRENT'S PORT SYNCED TO PROTON&nbsp;VPN</h1>
       <div class="horizon-rule" aria-hidden="true"></div>
     </div>
@@ -84,10 +84,10 @@
       <div class="install" id="install">
         <div class="rfs-code-card">
           <div class="rfs-code-head">
-            <span class="rfs-code-lang"><span class="k">[powershell]</span> Install in a normal window</span>
+            <span class="rfs-badge b-steel"><span class="k">[powershell]</span> Install in a normal window</span>
             <button class="rfs-btn rfs-btn-horizon rfs-btn-sm copy" type="button" data-copy="irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1 | iex">Copy</button>
           </div>
-          <pre><code><span class="rfs-tok-fn">irm</span> <span class="rfs-tok-str">https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1</span> | <span class="rfs-tok-fn">iex</span></code></pre>
+          <pre class="rfs-code-block"><code><span class="rfs-tok-fn">irm</span> <span class="rfs-tok-str">https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1</span> | <span class="rfs-tok-fn">iex</span></code></pre>
         </div>
         <p class="install-note">Run it as the Windows account you torrent with. It makes a Web UI password and tells you where to paste it in qBittorrent, does one test sync, then starts port-sync in the notification area and at every sign-in. No admin rights needed.</p>
       </div>
@@ -112,7 +112,7 @@
         <div class="readout dst" id="dst" data-state="sync">
           <p class="legend"><b>qBittorrent</b> listening port</p>
           <div class="window"><span class="digits" id="d-dst" aria-hidden="true"><svg class="dg" data-d="4" viewBox="0 0 64 112"><use class="a" href="#sa"/><use class="b" href="#sb"/><use class="c" href="#sc"/><use class="d" href="#sd"/><use class="e" href="#se"/><use class="f" href="#sf"/><use class="g" href="#sg"/></svg><svg class="dg" data-d="8" viewBox="0 0 64 112"><use class="a" href="#sa"/><use class="b" href="#sb"/><use class="c" href="#sc"/><use class="d" href="#sd"/><use class="e" href="#se"/><use class="f" href="#sf"/><use class="g" href="#sg"/></svg><svg class="dg" data-d="2" viewBox="0 0 64 112"><use class="a" href="#sa"/><use class="b" href="#sb"/><use class="c" href="#sc"/><use class="d" href="#sd"/><use class="e" href="#se"/><use class="f" href="#sf"/><use class="g" href="#sg"/></svg><svg class="dg" data-d="1" viewBox="0 0 64 112"><use class="a" href="#sa"/><use class="b" href="#sb"/><use class="c" href="#sc"/><use class="d" href="#sd"/><use class="e" href="#se"/><use class="f" href="#sf"/><use class="g" href="#sg"/></svg><svg class="dg" data-d="3" viewBox="0 0 64 112"><use class="a" href="#sa"/><use class="b" href="#sb"/><use class="c" href="#sc"/><use class="d" href="#sd"/><use class="e" href="#se"/><use class="f" href="#sf"/><use class="g" href="#sg"/></svg></span></div>
-          <p class="status"><span class="rfs-badge status-sync"><span class="k">[ok]</span> In sync</span><span class="rfs-badge status-off"><span class="k">[x]</span> Out of sync</span></p>
+          <p class="status"><span class="rfs-badge b-ok status-sync"><span class="k">[ok]</span> In sync</span><span class="rfs-badge b-fail status-off"><span class="k">[x]</span> Out of sync</span></p>
         </div>
 
         <p class="tail" id="tail" aria-live="polite"><span class="ts">2026-10-26 09:02:17 [port-sync]</span> listening port already correct: 48213</p>
@@ -136,7 +136,7 @@
 
 <section id="how" class="how" aria-labelledby="how-h">
   <div class="wrap">
-    <span class="rfs-badge"><span class="k">[loop]</span> Every 15 seconds</span>
+    <span class="rfs-badge b-beacon"><span class="k">[loop]</span> Every 15 seconds</span>
     <h2 id="how-h">THE LOOP</h2>
     <div class="path">
       <div class="term-in">
@@ -167,19 +167,19 @@
 
 <section id="log" class="log" aria-labelledby="log-h">
   <div class="wrap">
-    <span class="rfs-badge"><span class="k">[log]</span> Diagnostics</span>
+    <span class="rfs-badge b-steel"><span class="k">[log]</span> Diagnostics</span>
     <h2 id="log-h">WHAT SYNC.LOG TELLS YOU</h2>
     <p class="lede">One line per change, in <code>%LOCALAPPDATA%\port-sync\sync.log</code>. A condition that repeats is written once.</p>
     <table class="alarms">
       <thead><tr><th scope="col">Status</th><th scope="col">Line</th><th scope="col">Means</th></tr></thead>
       <tbody>
-        <tr data-k="ok"><td><span class="rfs-badge"><span class="k is-ok">[ok]</span></span></td><td><code>listening port updated: 49160 -&gt; 48213</code></td><td><b>Fixed.</b> qBittorrent now listens on Proton's port.</td></tr>
-        <tr data-k="ok"><td><span class="rfs-badge"><span class="k is-ok">[ok]</span></span></td><td><code>listening port already correct: 48213</code></td><td><b>Checked.</b> Nothing to change.</td></tr>
-        <tr data-k="wait"><td><span class="rfs-badge"><span class="k is-warn">[!]</span></span></td><td><code>VPN adapter 'ProtonVPN' is not up - waiting</code></td><td><b>Waiting</b> for the VPN to connect.</td></tr>
-        <tr data-k="wait"><td><span class="rfs-badge"><span class="k is-warn">[!]</span></span></td><td><code>no forwarded port in the Proton VPN log yet - waiting</code></td><td><b>Waiting.</b> Port forwarding is off, or a Proton update changed the log line. Nothing else breaks.</td></tr>
-        <tr data-k="wait"><td><span class="rfs-badge"><span class="k is-warn">[!]</span></span></td><td><code>qBittorrent Web UI not reachable (not running?) - will retry</code></td><td><b>Retrying.</b> Start qBittorrent; the port lands within 60&nbsp;s.</td></tr>
-        <tr data-k="fail"><td><span class="rfs-badge"><span class="k is-fail">[x]</span></span></td><td><code>Web UI login rejected (wrong password, or address banned)</code></td><td><b>Stopped</b> for 30&nbsp;minutes, or until the password file changes. Fix the password, then quit and reopen qBittorrent.</td></tr>
-        <tr data-k="fail"><td><span class="rfs-badge"><span class="k is-fail">[x]</span></span></td><td><code>can't decrypt …\qbit-pass.txt</code></td><td><b>Wrong account.</b> The file opens only for the Windows account that made it. Re-run the installer as the account you torrent with.</td></tr>
+        <tr data-k="ok"><td><span class="rfs-badge b-ok"><span class="k is-ok">[ok]</span></span></td><td><code>listening port updated: 49160 -&gt; 48213</code></td><td><b>Fixed.</b> qBittorrent now listens on Proton's port.</td></tr>
+        <tr data-k="ok"><td><span class="rfs-badge b-ok"><span class="k is-ok">[ok]</span></span></td><td><code>listening port already correct: 48213</code></td><td><b>Checked.</b> Nothing to change.</td></tr>
+        <tr data-k="wait"><td><span class="rfs-badge b-warn"><span class="k is-warn">[!]</span></span></td><td><code>VPN adapter 'ProtonVPN' is not up - waiting</code></td><td><b>Waiting</b> for the VPN to connect.</td></tr>
+        <tr data-k="wait"><td><span class="rfs-badge b-warn"><span class="k is-warn">[!]</span></span></td><td><code>no forwarded port in the Proton VPN log yet - waiting</code></td><td><b>Waiting.</b> Port forwarding is off, or a Proton update changed the log line. Nothing else breaks.</td></tr>
+        <tr data-k="wait"><td><span class="rfs-badge b-warn"><span class="k is-warn">[!]</span></span></td><td><code>qBittorrent Web UI not reachable (not running?) - will retry</code></td><td><b>Retrying.</b> Start qBittorrent; the port lands within 60&nbsp;s.</td></tr>
+        <tr data-k="fail"><td><span class="rfs-badge b-fail"><span class="k is-fail">[x]</span></span></td><td><code>Web UI login rejected (wrong password, or address banned)</code></td><td><b>Stopped</b> for 30&nbsp;minutes, or until the password file changes. Fix the password, then quit and reopen qBittorrent.</td></tr>
+        <tr data-k="fail"><td><span class="rfs-badge b-fail"><span class="k is-fail">[x]</span></span></td><td><code>can't decrypt …\qbit-pass.txt</code></td><td><b>Wrong account.</b> The file opens only for the Windows account that made it. Re-run the installer as the account you torrent with.</td></tr>
       </tbody>
     </table>
   </div>
@@ -187,36 +187,36 @@
 
 <section id="use" class="use" aria-labelledby="use-h">
   <div class="wrap">
-    <span class="rfs-badge"><span class="k">[cli]</span> Operations</span>
+    <span class="rfs-badge b-steel"><span class="k">[cli]</span> Operations</span>
     <h2 id="use-h">DAY TO DAY</h2>
     <div class="cmds">
       <div class="rfs-code-card">
         <div class="rfs-code-head">
-          <span class="rfs-code-lang"><span class="k">[powershell]</span> Watch sync.log</span>
+          <span class="rfs-badge b-steel"><span class="k">[powershell]</span> Watch sync.log</span>
           <button class="rfs-btn rfs-btn-outline rfs-btn-sm" type="button" data-copy='Get-Content "$env:LOCALAPPDATA\port-sync\sync.log" -Wait -Tail 20'>Copy</button>
         </div>
-        <pre><code><span class="rfs-tok-fn">Get-Content</span> <span class="rfs-tok-str">"$env:LOCALAPPDATA\port-sync\sync.log"</span> <span class="rfs-tok-kw">-Wait</span> <span class="rfs-tok-kw">-Tail</span> <span class="rfs-tok-num">20</span></code></pre>
+        <pre class="rfs-code-block"><code><span class="rfs-tok-fn">Get-Content</span> <span class="rfs-tok-str">"$env:LOCALAPPDATA\port-sync\sync.log"</span> <span class="rfs-tok-kw">-Wait</span> <span class="rfs-tok-kw">-Tail</span> <span class="rfs-tok-num">20</span></code></pre>
       </div>
       <div class="rfs-code-card">
         <div class="rfs-code-head">
-          <span class="rfs-code-lang"><span class="k">[powershell]</span> Single sync cycle (exit 0 / 1)</span>
+          <span class="rfs-badge b-steel"><span class="k">[powershell]</span> Single sync cycle (exit 0 / 1)</span>
           <button class="rfs-btn rfs-btn-outline rfs-btn-sm" type="button" data-copy='&amp; "$env:LOCALAPPDATA\port-sync\port-sync.exe" --once | Write-Output'>Copy</button>
         </div>
-        <pre><code>&amp; <span class="rfs-tok-str">"$env:LOCALAPPDATA\port-sync\port-sync.exe"</span> <span class="rfs-tok-kw">--once</span> | <span class="rfs-tok-fn">Write-Output</span></code></pre>
+        <pre class="rfs-code-block"><code>&amp; <span class="rfs-tok-str">"$env:LOCALAPPDATA\port-sync\port-sync.exe"</span> <span class="rfs-tok-kw">--once</span> | <span class="rfs-tok-fn">Write-Output</span></code></pre>
       </div>
       <div class="rfs-code-card">
         <div class="rfs-code-head">
-          <span class="rfs-code-lang"><span class="k">[powershell]</span> Stop running tray app</span>
+          <span class="rfs-badge b-steel"><span class="k">[powershell]</span> Stop running tray app</span>
           <button class="rfs-btn rfs-btn-outline rfs-btn-sm" type="button" data-copy='&amp; "$env:LOCALAPPDATA\port-sync\port-sync.exe" --quit | Write-Output'>Copy</button>
         </div>
-        <pre><code>&amp; <span class="rfs-tok-str">"$env:LOCALAPPDATA\port-sync\port-sync.exe"</span> <span class="rfs-tok-kw">--quit</span> | <span class="rfs-tok-fn">Write-Output</span></code></pre>
+        <pre class="rfs-code-block"><code>&amp; <span class="rfs-tok-str">"$env:LOCALAPPDATA\port-sync\port-sync.exe"</span> <span class="rfs-tok-kw">--quit</span> | <span class="rfs-tok-fn">Write-Output</span></code></pre>
       </div>
       <div class="rfs-code-card">
         <div class="rfs-code-head">
-          <span class="rfs-code-lang"><span class="k">[powershell]</span> Uninstall</span>
+          <span class="rfs-badge b-steel"><span class="k">[powershell]</span> Uninstall</span>
           <button class="rfs-btn rfs-btn-outline rfs-btn-sm" type="button" data-copy='&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1))) -Uninstall'>Copy</button>
         </div>
-        <pre><code>&amp; ([scriptblock]::Create((<span class="rfs-tok-fn">irm</span> <span class="rfs-tok-str">https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1</span>))) <span class="rfs-tok-kw">-Uninstall</span></code></pre>
+        <pre class="rfs-code-block"><code>&amp; ([scriptblock]::Create((<span class="rfs-tok-fn">irm</span> <span class="rfs-tok-str">https://raw.githubusercontent.com/Real-Fruit-Snacks/port-sync/main/install.ps1</span>))) <span class="rfs-tok-kw">-Uninstall</span></code></pre>
       </div>
     </div>
     <p class="note">Coming from 2.x, or <code>proton-qbit-port-sync</code> 1.x: run the same install line. It keeps your password file and any setting you changed, removes the old task (one UAC prompt, for that only), and moves to <code>%LOCALAPPDATA%\port-sync</code>.</p>
@@ -226,12 +226,12 @@
 <section id="config" class="config" aria-labelledby="config-h">
   <div class="wrap config-grid">
     <div>
-      <span class="rfs-badge"><span class="k">[json]</span> Configuration</span>
+      <span class="rfs-badge b-beacon"><span class="k">[json]</span> Configuration</span>
       <h2 id="config-h">SETTINGS</h2>
       <p>The defaults fit the setup guide. To change one, use <b>Edit settings</b> in port-sync's menu: it opens <code>%LOCALAPPDATA%\port-sync\config.json</code>, which can hold only the settings you change. port-sync picks them up within 15&nbsp;seconds.</p>
       <div class="rfs-code-card">
-        <div class="rfs-code-head"><span class="rfs-code-lang"><span class="k">[json]</span> config.json</span></div>
-        <pre><code>{ <span class="rfs-tok-kw">"adapter"</span>: <span class="rfs-tok-str">"ProtonVPN TUN"</span> }</code></pre>
+        <div class="rfs-code-head"><span class="rfs-badge b-steel"><span class="k">[json]</span> config.json</span></div>
+        <pre class="rfs-code-block"><code>{ <span class="rfs-tok-kw">"adapter"</span>: <span class="rfs-tok-str">"ProtonVPN TUN"</span> }</code></pre>
       </div>
     </div>
     <table class="params">
@@ -252,7 +252,7 @@
 <section id="tested" class="tested" aria-labelledby="tested-h">
   <div class="wrap tested-grid">
     <div>
-      <span class="rfs-badge"><span class="k">[ok]</span> Verification</span>
+      <span class="rfs-badge b-ok"><span class="k">[ok]</span> Verification</span>
       <h2 id="tested-h">TESTED ON</h2>
       <ul>
         <li><b>Ubuntu 24.04</b>, qbittorrent-nox 4.6.3: the sync's tests, including against a real Web UI, with simulated Proton log lines.</li>
@@ -261,7 +261,7 @@
       </ul>
     </div>
     <div>
-      <span class="rfs-badge"><span class="k">[!]</span> Limits</span>
+      <span class="rfs-badge b-warn"><span class="k">[!]</span> Limits</span>
       <h2>KNOWN ISSUES</h2>
       <ul>
         <li>Proton doesn't document the <code>Port pair</code> line. If an update changes it, <code>sync.log</code> says so and nothing else breaks.</li>
@@ -275,7 +275,7 @@
 <footer>
   <div class="wrap footer-inner">
     <p>MIT · Not affiliated with Proton AG or the qBittorrent project · Set in Big Shoulders Stencil, Albert Sans, and Azeret Mono.</p>
-    <p><a href="https://github.com/Real-Fruit-Snacks/port-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/rfs-brand/">rfs-brand</a> · <a href="https://real-fruit-snacks.github.io/">Real-Fruit-Snacks</a></p>
+    <p><a href="https://github.com/Real-Fruit-Snacks/port-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/docs/USAGE.md">Usage</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/port-sync/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/rfs-brand/">rfs-brand</a> · <a href="https://real-fruit-snacks.github.io/">Real-Fruit-Snacks</a></p>
   </div>
 </footer>
 </div>
